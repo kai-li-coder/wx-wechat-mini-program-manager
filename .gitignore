@@ -1,0 +1,20 @@
+# 依赖与构建产物。
+node_modules/
+dist/
+coverage/
+
+# Vite 与 TypeScript 缓存。
+.vite/
+.cache/
+*.tsbuildinfo
+.eslintrc-auto-import.json
+src/components.d.ts
+
+# 本地环境文件。
+.env.local
+.env.*.local
+
+# 系统与编辑器文件。
+.DS_Store
+.idea/
+.vscode/

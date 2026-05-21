@@ -1,0 +1,12 @@
+{
+  // TypeScript 项目引用入口，拆分应用与 Node 配置。
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  // Vite、Vitest 与 ESLint 等 Node 侧配置类型检查。
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "include": ["vite.config.ts", "vitest.config.ts"],
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"]
+  }
+}

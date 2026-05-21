@@ -1,0 +1,89 @@
+/* 管理端全局基础样式。 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: $color-background;
+  color: $color-text-primary;
+  font-family:
+    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.query-card {
+  border-radius: 8px;
+  box-shadow: $shadow-panel;
+}
+
+.query-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr)) auto;
+  gap: 8px 12px;
+}
+
+.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.query-form .el-date-editor,
+.query-form .el-select,
+.query-form .el-input {
+  width: 100%;
+}
+
+.query-form__actions {
+  align-self: end;
+}
+
+@media (max-width: 1280px) {
+  .query-form {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .query-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .query-card .el-card__body {
+    padding: 16px;
+  }
+
+  .query-form .el-form-item {
+    display: block;
+    min-width: 0;
+  }
+
+  .query-form .el-form-item__label {
+    width: auto !important;
+    height: auto;
+    justify-content: flex-start;
+    padding: 0 0 6px;
+    line-height: 20px;
+  }
+
+  .query-form .el-form-item__content {
+    min-width: 0;
+    margin-left: 0 !important;
+  }
+
+  .query-form__actions .el-form-item__content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
