@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
   /** 本地开发代理目标地址。 */
   readonly VITE_API_PROXY_TARGET?: string;
+  /** 当前接口服务展示名称。 */
+  readonly VITE_SERVICE_LABEL?: string;
 }
 
 interface ImportMeta {

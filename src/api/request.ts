@@ -2,6 +2,7 @@
 import axios, { AxiosHeaders, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import { ElMessage } from "element-plus";
 
+import { IS_LOGIN_VERIFICATION_DISABLED } from "@/config/auth";
 import {
   ADMIN_AUTH_EXPIRED_EVENT,
   clearStoredAdminAuth,
@@ -42,6 +43,10 @@ export const createAuthorizationHeader = (accessToken: string) => {
 
 /** 为请求配置附加鉴权头。 */
 export const attachAuthorizationHeader = (config: InternalAxiosRequestConfig) => {
+  if (IS_LOGIN_VERIFICATION_DISABLED) {
+    return config;
+  }
+
   const authorizationHeader = createAuthorizationHeader(readStoredAdminAccessToken());
   if (!authorizationHeader) {
     return config;
@@ -87,6 +92,10 @@ interface UnauthorizedRedirectOptions {
 
 /** 处理未登录或登录过期响应。 */
 export const handleUnauthorizedResponse = (options: UnauthorizedRedirectOptions = {}) => {
+  if (IS_LOGIN_VERIFICATION_DISABLED) {
+    return;
+  }
+
   clearStoredAdminAuth();
   const currentPath = options.currentPath ?? `${window.location.pathname}${window.location.search}`;
   const dispatchAuthExpired =

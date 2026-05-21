@@ -19,7 +19,7 @@
 
     <!-- 右侧用户操作区 -->
     <div class="app-header__right">
-      <el-tag effect="plain" type="success">本地后端 8080</el-tag>
+      <el-tag effect="plain" type="success">{{ serviceLabel }}</el-tag>
       <div class="app-header__user">
         <el-avatar :size="28" :src="authStore.userAvatar">{{ avatarText }}</el-avatar>
         <span class="app-header__user-name">{{ authStore.userName }}</span>
@@ -45,6 +45,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 /** 退出登录状态。 */
 const isLoggingOut = ref(false);
+/** 当前接口服务展示名称。 */
+const serviceLabel = import.meta.env.VITE_SERVICE_LABEL?.trim() || "本地后端 8080";
 
 /** 头像兜底文案。 */
 const avatarText = computed(() => authStore.userName.slice(0, 1).toUpperCase());

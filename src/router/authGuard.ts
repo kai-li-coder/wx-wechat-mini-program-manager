@@ -1,6 +1,7 @@
 // 管理端路由登录守卫。
 import type { RouteLocationNormalized } from "vue-router";
 
+import { IS_LOGIN_VERIFICATION_DISABLED } from "@/config/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 /** 登录页路径。 */
@@ -28,6 +29,10 @@ export const resolveLoginRedirectPath = (redirectQuery: unknown) => {
 
 /** 计算管理端路由登录拦截结果。 */
 export const resolveAdminRouteRedirect = (to: RouteLocationNormalized) => {
+  if (IS_LOGIN_VERIFICATION_DISABLED) {
+    return to.path === LOGIN_ROUTE_PATH ? resolveLoginRedirectPath(to.query.redirect) : true;
+  }
+
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some((routeRecord) => Boolean(routeRecord.meta.requiresAuth));
   const hasValidSession = authStore.hasValidSession();

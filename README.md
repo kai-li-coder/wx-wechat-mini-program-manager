@@ -17,6 +17,18 @@ pnpm dev
 http://localhost:5174
 ```
 
+如需对齐微信小程序当前开发环境服务（`https://aihire.welsend.com/prod-api`），启动额外测试服务：
+
+```bash
+pnpm dev:miniapp
+```
+
+额外测试服务默认地址：
+
+```text
+http://localhost:5175
+```
+
 ## 功能范围
 
 - 埋点总览：对接 `/api/admin/candidate/trace/metrics`

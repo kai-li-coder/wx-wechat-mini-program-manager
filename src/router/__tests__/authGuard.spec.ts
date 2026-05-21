@@ -5,11 +5,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   DEFAULT_AUTH_ROUTE_PATH,
-  LOGIN_ROUTE_PATH,
   resolveAdminRouteRedirect,
   resolveLoginRedirectPath,
 } from "@/router/authGuard";
-import { useAuthStore } from "@/stores/useAuthStore";
 
 /** 创建路由对象测试桩。 */
 const createRouteStub = (options: {
@@ -37,7 +35,7 @@ describe("auth guard", () => {
     localStorage.clear();
   });
 
-  it("redirects protected route to login without session", () => {
+  it("allows protected route without session when login verification is disabled", () => {
     expect(
       resolveAdminRouteRedirect(
         createRouteStub({
@@ -46,27 +44,10 @@ describe("auth guard", () => {
           requiresAuth: true,
         }),
       ),
-    ).toEqual({
-      path: LOGIN_ROUTE_PATH,
-      query: {
-        redirect: "/trace-flow?pageNum=1",
-      },
-    });
+    ).toBe(true);
   });
 
-  it("redirects login page to dashboard with valid session", () => {
-    const authStore = useAuthStore();
-    authStore.setSession({
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
-      expiresAt: Date.now() + 60_000,
-      user: {
-        avatar: "",
-        name: "admin",
-        userId: "US00000000",
-      },
-    });
-
+  it("redirects login page to dashboard when login verification is disabled", () => {
     expect(
       resolveAdminRouteRedirect(
         createRouteStub({
@@ -74,6 +55,19 @@ describe("auth guard", () => {
         }),
       ),
     ).toBe(DEFAULT_AUTH_ROUTE_PATH);
+  });
+
+  it("uses safe redirect from login page when login verification is disabled", () => {
+    expect(
+      resolveAdminRouteRedirect(
+        createRouteStub({
+          path: "/login",
+          query: {
+            redirect: "/trace-flow",
+          },
+        }),
+      ),
+    ).toBe("/trace-flow");
   });
 
   it("normalizes unsafe or repeated login redirect", () => {

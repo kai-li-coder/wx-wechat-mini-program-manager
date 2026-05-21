@@ -32,7 +32,7 @@ describe("request utils", () => {
     expect(createAuthorizationHeader("")).toBe("");
   });
 
-  it("attaches authorization header from stored session", () => {
+  it("skips authorization header when login verification is disabled", () => {
     writeStoredAdminAuth({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -50,10 +50,10 @@ describe("request utils", () => {
 
     const nextConfig = attachAuthorizationHeader(requestConfig);
 
-    expect(AxiosHeaders.from(nextConfig.headers).get("Authorization")).toBe("Bearer access-token");
+    expect(AxiosHeaders.from(nextConfig.headers).get("Authorization")).toBeUndefined();
   });
 
-  it("clears auth and redirects when unauthorized", () => {
+  it("skips auth clearing and redirect when login verification is disabled", () => {
     writeStoredAdminAuth({
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -77,8 +77,8 @@ describe("request utils", () => {
       },
     });
 
-    expect(readStoredAdminAuth()).toBeNull();
-    expect(hasDispatchedAuthExpired).toBe(true);
-    expect(redirects).toEqual(["/login?redirect=%2Ftrace-flow%3FpageNum%3D1"]);
+    expect(readStoredAdminAuth()?.accessToken).toBe("access-token");
+    expect(hasDispatchedAuthExpired).toBe(false);
+    expect(redirects).toEqual([]);
   });
 });
