@@ -3,7 +3,7 @@
   <!-- 链路事件表格卡片 -->
   <el-card class="table-card" shadow="never">
     <!-- 事件明细表格 -->
-    <el-table v-loading="loading" :data="eventItems" empty-text="暂无链路事件" row-key="id">
+    <el-table v-loading="loading" :data="eventItems" empty-text="暂无链路事件" :row-key="resolveTraceEventRowKey">
       <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 客户端时间 -->
@@ -25,6 +25,12 @@
       </el-table-column>
       <el-table-column align="right" label="耗时(ms)" prop="durationMs" width="110" />
       <el-table-column label="错误码" min-width="150" prop="errorCode" show-overflow-tooltip />
+      <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 服务端记录时间 -->
+          {{ formatDisplayDateTime(resolveTraceEventServerTime(row)) }}
+        </template>
+      </el-table-column>
       <el-table-column label="页面路径" min-width="180" prop="pageRoute" show-overflow-tooltip />
       <el-table-column fixed="right" label="操作" width="92">
         <template #default="{ row }">
@@ -54,7 +60,7 @@
 import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatTraceStage } from "@/utils/trace";
+import { formatTraceStage, resolveTraceEventRowKey, resolveTraceEventServerTime } from "@/utils/trace";
 
 const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
   /** 链路事件列表。 */

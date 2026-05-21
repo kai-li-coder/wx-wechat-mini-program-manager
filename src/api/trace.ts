@@ -43,8 +43,8 @@ export interface TraceFlowQuery {
 
 /** 单条埋点事件。 */
 export interface TraceEventItem {
-  /** 数据库主键。 */
-  id: number;
+  /** 数据库主键，本地测试服务返回，线上小程序开发服务可能不返回。 */
+  id?: number;
   /** 后端生成事件 ID。 */
   eventId: string;
   /** 事件码。 */
@@ -79,12 +79,14 @@ export interface TraceEventItem {
   clientTime: string;
   /** 服务端接收时间。 */
   serverTime: string;
-  /** 服务端请求 ID。 */
-  requestId: string;
+  /** 服务端请求 ID，本地测试服务返回，线上小程序开发服务可能不返回。 */
+  requestId?: string;
   /** 客户端 IP。 */
   clientIp: string;
   /** 用户代理。 */
   userAgent: string;
+  /** 记录创建时间，线上小程序开发服务返回。 */
+  createdAt?: string;
 }
 
 /** 分页响应结构。 */

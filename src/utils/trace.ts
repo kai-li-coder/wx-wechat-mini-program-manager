@@ -63,6 +63,19 @@ export const formatTraceStage = (stage?: string) => {
   return traceStageLabelMap.get(normalizedStage) ?? normalizedStage;
 };
 
+/** 获取链路事件表格稳定行键。 */
+export const resolveTraceEventRowKey = (eventItem: TraceEventItem) => {
+  if (eventItem.eventId) {
+    return eventItem.eventId;
+  }
+
+  return String(eventItem.id ?? `${eventItem.flowId}-${eventItem.clientTime}`);
+};
+
+/** 获取服务端记录时间，优先使用实际返回的创建时间。 */
+export const resolveTraceEventServerTime = (eventItem: TraceEventItem) =>
+  eventItem.createdAt || eventItem.serverTime;
+
 /** 统计埋点聚合摘要。 */
 export const aggregateMetricSummary = (metricItems: TraceMetricItem[]): TraceMetricSummary =>
   metricItems.reduce(

@@ -20,7 +20,7 @@
       :loading="isLoading"
       :page-num="flowQueryForm.pageNum || 1"
       :page-size="flowQueryForm.pageSize || 50"
-      :total="total"
+      :total="errorTotal"
       @page-change="handlePageChange"
       @size-change="handleSizeChange"
       @view-detail="handleViewDetail"
@@ -54,8 +54,6 @@ const flowQueryForm = ref<TraceFlowQuery>(createDefaultFlowQuery());
 const resultFilter = ref("");
 /** 原始链路事件列表。 */
 const eventItems = ref<TraceEventItem[]>([]);
-/** 后端分页总数。 */
-const total = ref(0);
 /** 页面加载状态。 */
 const isLoading = ref(false);
 /** 事件详情抽屉引用。 */
@@ -63,6 +61,8 @@ const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawe
 
 /** 错误日志列表。 */
 const errorEventItems = computed(() => filterErrorEvents(eventItems.value, resultFilter.value));
+/** 错误日志总数。 */
+const errorTotal = computed(() => errorEventItems.value.length);
 
 /** 查询错误日志。 */
 const handleSearch = async () => {
@@ -70,7 +70,6 @@ const handleSearch = async () => {
   try {
     const flowPageResult = await queryTraceFlow(flowQueryForm.value);
     eventItems.value = flowPageResult.records;
-    total.value = flowPageResult.total;
   } finally {
     isLoading.value = false;
   }
@@ -81,7 +80,6 @@ const handleReset = () => {
   flowQueryForm.value = createDefaultFlowQuery();
   resultFilter.value = "";
   eventItems.value = [];
-  total.value = 0;
 };
 
 /** 切换页码。 */

@@ -17,7 +17,7 @@ pnpm dev
 http://localhost:5174
 ```
 
-如需对齐微信小程序当前开发环境服务（`https://aihire.welsend.com/prod-api`），启动额外测试服务：
+如需对齐微信小程序当前开发环境服务（`http://192.168.0.100:8080`），启动额外测试服务：
 
 ```bash
 pnpm dev:miniapp

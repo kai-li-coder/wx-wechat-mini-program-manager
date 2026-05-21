@@ -6,6 +6,8 @@ import {
   attachAuthorizationHeader,
   createAuthorizationHeader,
   handleUnauthorizedResponse,
+  MINIAPP_DEVELOPMENT_API_SERVICE_BASE,
+  resolveApiBase,
   unwrapTraceResponse,
 } from "@/api/request";
 import { readStoredAdminAuth, writeStoredAdminAuth } from "@/utils/authStorage";
@@ -30,6 +32,27 @@ describe("request utils", () => {
   it("creates authorization header from access token", () => {
     expect(createAuthorizationHeader(" access-token ")).toBe("Bearer access-token");
     expect(createAuthorizationHeader("")).toBe("");
+  });
+
+  it("resolves default api base outside miniapp development mode", () => {
+    expect(resolveApiBase({ apiBase: " /custom-api ", mode: "development" })).toBe("/custom-api");
+    expect(resolveApiBase({ apiBase: "", mode: "development" })).toBe("/api");
+  });
+
+  it("resolves service base when miniapp api base is empty", () => {
+    expect(
+      resolveApiBase({
+        apiBase: "",
+        apiServiceBase: " http://192.168.0.100:8080/ ",
+        mode: "miniapp-development",
+      }),
+    ).toBe("http://192.168.0.100:8080");
+  });
+
+  it("uses default miniapp service base when service env is missing", () => {
+    expect(resolveApiBase({ apiBase: "", apiServiceBase: "", mode: "miniapp-development" })).toBe(
+      MINIAPP_DEVELOPMENT_API_SERVICE_BASE,
+    );
   });
 
   it("skips authorization header when login verification is disabled", () => {

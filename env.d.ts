@@ -2,6 +2,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  /** 请求服务基础地址。 */
+  readonly VITE_API_SERVICE_BASE?: string;
   /** 接口请求基础前缀。 */
   readonly VITE_API_BASE?: string;
   /** 本地开发代理目标地址。 */

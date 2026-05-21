@@ -23,8 +23,40 @@ export interface TraceApiResponse<T> {
   result?: T;
 }
 
-/** 接口基础前缀。 */
-const apiBase = import.meta.env.VITE_API_BASE?.trim() || "/api";
+/** 请求基础地址解析选项。 */
+interface ApiBaseResolveOptions {
+  /** 当前启动模式。 */
+  mode?: string;
+  /** 接口请求基础前缀。 */
+  apiBase?: string;
+  /** 请求服务基础地址。 */
+  apiServiceBase?: string;
+}
+
+/** 小程序开发环境模式名。 */
+export const MINIAPP_DEVELOPMENT_MODE = "miniapp-development";
+
+/** 小程序开发环境默认请求服务基础地址。 */
+export const MINIAPP_DEVELOPMENT_API_SERVICE_BASE = "http://192.168.0.100:8080";
+
+/** 清理 URL 尾部斜杠，避免 Axios 拼接路径时出现双斜杠。 */
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+/** 解析 Axios 请求基础地址。 */
+export const resolveApiBase = (options: ApiBaseResolveOptions = {}) => {
+  const currentMode = options.mode ?? import.meta.env.MODE;
+  const apiBase = options.apiBase ?? import.meta.env.VITE_API_BASE;
+  const apiServiceBase = options.apiServiceBase ?? import.meta.env.VITE_API_SERVICE_BASE;
+
+  if (currentMode === MINIAPP_DEVELOPMENT_MODE) {
+    return trimTrailingSlash(apiServiceBase?.trim() || MINIAPP_DEVELOPMENT_API_SERVICE_BASE);
+  }
+
+  return apiBase?.trim() || "/api";
+};
+
+/** Axios 请求基础地址。 */
+const apiBase = resolveApiBase();
 
 /** Axios 实例。 */
 const httpClient = axios.create({

@@ -6,6 +6,8 @@ import {
   aggregateMetricSummary,
   filterErrorEvents,
   formatTraceStage,
+  resolveTraceEventRowKey,
+  resolveTraceEventServerTime,
   toEventRankItems,
   toMetricTrendRows,
 } from "@/utils/trace";
@@ -107,5 +109,19 @@ describe("trace utils", () => {
 
     expect(filterErrorEvents(eventItems).map((eventItem) => eventItem.result)).toEqual(["fail", "warning"]);
     expect(filterErrorEvents(eventItems, "fail").map((eventItem) => eventItem.result)).toEqual(["fail"]);
+  });
+
+  it("uses eventId as stable row key when backend omits id", () => {
+    const eventItem = createEventItem("success");
+    delete eventItem.id;
+
+    expect(resolveTraceEventRowKey(eventItem)).toBe("evt_1");
+  });
+
+  it("uses createdAt as server display time when backend returns it", () => {
+    const eventItem = createEventItem("success");
+    eventItem.createdAt = "2026-05-21T15:42:14.000+08:00";
+
+    expect(resolveTraceEventServerTime(eventItem)).toBe("2026-05-21T15:42:14.000+08:00");
   });
 });

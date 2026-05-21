@@ -16,7 +16,10 @@
         <el-descriptions-item label="错误码">{{ eventItem.errorCode || "-" }}</el-descriptions-item>
         <el-descriptions-item label="错误信息">{{ eventItem.errorMessage || "-" }}</el-descriptions-item>
         <el-descriptions-item label="客户端时间">{{ formatDisplayDateTime(eventItem.clientTime) }}</el-descriptions-item>
-        <el-descriptions-item label="服务端时间">{{ eventItem.serverTime }}</el-descriptions-item>
+        <el-descriptions-item label="服务端时间">
+          {{ formatDisplayDateTime(resolveTraceEventServerTime(eventItem)) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="请求 ID">{{ eventItem.requestId || "-" }}</el-descriptions-item>
       </el-descriptions>
 
       <!-- JSON 扩展信息区域 -->
@@ -39,7 +42,7 @@ import type { TraceEventItem } from "@/api/trace";
 import JsonViewer from "@/components/JsonViewer.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatTraceStage } from "@/utils/trace";
+import { formatTraceStage, resolveTraceEventServerTime } from "@/utils/trace";
 
 /** 抽屉显示状态。 */
 const drawerVisible = ref(false);

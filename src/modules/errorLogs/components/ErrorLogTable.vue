@@ -3,7 +3,7 @@
   <!-- 错误日志表格卡片 -->
   <el-card class="table-card" shadow="never">
     <!-- 错误日志表格 -->
-    <el-table v-loading="loading" :data="eventItems" empty-text="暂无错误日志" row-key="id">
+    <el-table v-loading="loading" :data="eventItems" empty-text="暂无错误日志" :row-key="resolveTraceEventRowKey">
       <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 客户端时间 -->
@@ -19,6 +19,12 @@
       <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
       <el-table-column label="错误信息" min-width="240" prop="errorMessage" show-overflow-tooltip />
       <el-table-column label="事件码" min-width="170" prop="eventCode" show-overflow-tooltip />
+      <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 服务端记录时间 -->
+          {{ formatDisplayDateTime(resolveTraceEventServerTime(row)) }}
+        </template>
+      </el-table-column>
       <el-table-column label="Flow ID" min-width="180" prop="flowId" show-overflow-tooltip />
       <el-table-column label="候选人 ID" min-width="120" prop="interviewCandidateId" show-overflow-tooltip />
       <el-table-column fixed="right" label="操作" width="92">
@@ -49,6 +55,7 @@
 import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
+import { resolveTraceEventRowKey, resolveTraceEventServerTime } from "@/utils/trace";
 
 const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
   /** 错误日志事件列表。 */
