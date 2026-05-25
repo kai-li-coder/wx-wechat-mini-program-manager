@@ -1,5 +1,5 @@
 // 埋点查询选项配置。
-import { formatTraceEventCode } from "@/utils/trace";
+import { formatTraceEventCode, formatTraceStage, traceEventCodes, traceStageCodes } from "@/utils/trace";
 
 /** 埋点结果选项。 */
 const resultOptions = [
@@ -16,19 +16,22 @@ const errorResultOptions = [
   { label: "警告", value: "warning" },
 ];
 
-/** 常见埋点事件码选项。 */
-const eventCodeOptions = [
-  { label: formatTraceEventCode("camera_init_fail"), value: "camera_init_fail" },
-  { label: formatTraceEventCode("record_stop_timeout"), value: "record_stop_timeout" },
-  { label: formatTraceEventCode("upload_fail"), value: "upload_fail" },
-  { label: formatTraceEventCode("submit_fail"), value: "submit_fail" },
-  { label: formatTraceEventCode("unexpected_hide"), value: "unexpected_hide" },
-  { label: formatTraceEventCode("interrupt_continue"), value: "interrupt_continue" },
-];
+/** 全部埋点事件码选项。 */
+const eventCodeOptions = traceEventCodes.map((eventCode) => ({
+  label: formatTraceEventCode(eventCode),
+  value: eventCode,
+}));
+
+/** 全部链路阶段选项。 */
+const stageOptions = traceStageCodes.map((stage) => ({
+  label: formatTraceStage(stage),
+  value: stage,
+}));
 
 /** 获取埋点查询选项。 */
 export const useTraceOptions = () => ({
   resultOptions,
   errorResultOptions,
   eventCodeOptions,
+  stageOptions,
 });

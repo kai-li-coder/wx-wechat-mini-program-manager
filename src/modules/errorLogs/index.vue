@@ -44,6 +44,11 @@ import { filterErrorEvents } from "@/utils/trace";
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
   flowId: "",
   interviewCandidateId: "",
+  eventCode: "",
+  brand: "",
+  model: "",
+  startTime: "",
+  endTime: "",
   pageNum: 1,
   pageSize: 50,
 });

@@ -37,6 +37,15 @@ import FlowSearchForm from "@/modules/traceFlow/components/FlowSearchForm.vue";
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
   flowId: "",
   interviewCandidateId: "",
+  eventCode: "",
+  stage: "",
+  result: "",
+  durationMs: undefined,
+  brand: "",
+  model: "",
+  startTime: "",
+  endTime: "",
+  pageRoute: "",
   pageNum: 1,
   pageSize: 50,
 });

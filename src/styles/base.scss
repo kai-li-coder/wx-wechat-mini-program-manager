@@ -34,14 +34,25 @@ a {
   gap: 8px 12px;
 }
 
+/* 多筛选项表单使用固定列宽，避免普通字段落入按钮自动列。 */
+.query-form--fixed-columns {
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+}
+
 .query-form .el-form-item {
   margin-bottom: 0;
 }
 
 .query-form .el-date-editor,
+.query-form .el-input-number,
 .query-form .el-select,
 .query-form .el-input {
   width: 100%;
+}
+
+/* 查询表单时间范围项需要更宽的展示空间。 */
+.query-form__range {
+  grid-column: span 2;
 }
 
 .query-form__actions {
@@ -85,5 +96,9 @@ a {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .query-form__range {
+    grid-column: span 1;
   }
 }

@@ -35,6 +35,24 @@ export interface TraceFlowQuery {
   flowId?: string;
   /** 候选人面试 ID。 */
   interviewCandidateId?: number | string;
+  /** 事件码筛选。 */
+  eventCode?: string;
+  /** 业务阶段筛选。 */
+  stage?: string;
+  /** 事件结果筛选。 */
+  result?: string;
+  /** 阶段耗时毫秒筛选。 */
+  durationMs?: number;
+  /** 设备品牌筛选。 */
+  brand?: string;
+  /** 设备机型筛选。 */
+  model?: string;
+  /** 服务端时间范围开始时间，格式 YYYY-MM-DD HH:mm:ss。 */
+  startTime?: string;
+  /** 服务端时间范围结束时间，格式 YYYY-MM-DD HH:mm:ss。 */
+  endTime?: string;
+  /** 页面路径筛选。 */
+  pageRoute?: string;
   /** 页码。 */
   pageNum?: number;
   /** 每页条数。 */
@@ -97,6 +115,51 @@ export interface TracePagedResponse<T> {
   total: number;
 }
 
+/** 链路事件字符串筛选字段名。 */
+type TraceFlowStringFilterKey =
+  | "flowId"
+  | "interviewCandidateId"
+  | "eventCode"
+  | "stage"
+  | "result"
+  | "brand"
+  | "model"
+  | "startTime"
+  | "endTime"
+  | "pageRoute";
+
+/** 写入非空字符串筛选参数。 */
+const appendNormalizedStringParam = (
+  normalizedParams: TraceFlowQuery,
+  params: TraceFlowQuery,
+  filterKey: TraceFlowStringFilterKey,
+) => {
+  /** 去除首尾空格后的筛选值。 */
+  const filterValue = String(params[filterKey] ?? "").trim();
+  if (!filterValue) {
+    return;
+  }
+
+  normalizedParams[filterKey] = filterValue;
+};
+
+/** 写入有效耗时筛选参数。 */
+const appendNormalizedDurationParam = (normalizedParams: TraceFlowQuery, params: TraceFlowQuery) => {
+  /** 原始耗时筛选值。 */
+  const rawDurationMs = params.durationMs;
+  if (rawDurationMs === undefined) {
+    return;
+  }
+
+  /** 数字化后的耗时筛选值。 */
+  const durationMs = Number(rawDurationMs);
+  if (!Number.isFinite(durationMs) || durationMs < 0) {
+    return;
+  }
+
+  normalizedParams.durationMs = durationMs;
+};
+
 /** 清理链路查询参数，空筛选字段不传给后端。 */
 const normalizeTraceFlowQuery = (params: TraceFlowQuery): TraceFlowQuery => {
   /** 清理后的链路查询参数。 */
@@ -105,17 +168,17 @@ const normalizeTraceFlowQuery = (params: TraceFlowQuery): TraceFlowQuery => {
     pageSize: params.pageSize,
   };
 
-  /** 规范化后的 Flow ID。 */
-  const flowId = String(params.flowId ?? "").trim();
-  if (flowId) {
-    normalizedParams.flowId = flowId;
-  }
-
-  /** 规范化后的候选人面试 ID。 */
-  const interviewCandidateId = String(params.interviewCandidateId ?? "").trim();
-  if (interviewCandidateId) {
-    normalizedParams.interviewCandidateId = interviewCandidateId;
-  }
+  appendNormalizedStringParam(normalizedParams, params, "flowId");
+  appendNormalizedStringParam(normalizedParams, params, "interviewCandidateId");
+  appendNormalizedStringParam(normalizedParams, params, "eventCode");
+  appendNormalizedStringParam(normalizedParams, params, "stage");
+  appendNormalizedStringParam(normalizedParams, params, "result");
+  appendNormalizedStringParam(normalizedParams, params, "brand");
+  appendNormalizedStringParam(normalizedParams, params, "model");
+  appendNormalizedStringParam(normalizedParams, params, "startTime");
+  appendNormalizedStringParam(normalizedParams, params, "endTime");
+  appendNormalizedStringParam(normalizedParams, params, "pageRoute");
+  appendNormalizedDurationParam(normalizedParams, params);
 
   return normalizedParams;
 };

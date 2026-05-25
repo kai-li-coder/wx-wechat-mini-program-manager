@@ -71,6 +71,9 @@ const traceStageLabelMap = new Map<string, string>([
   ["codex_production_telemetry_check", "生产埋点连通性检测"],
 ]);
 
+/** 当前支持筛选的全部链路阶段编码。 */
+export const traceStageCodes = [...traceStageLabelMap.keys()];
+
 /** 事件码中文文案字典。 */
 const traceEventCodeLabelMap = new Map<string, string>([
   ...traceStageLabelMap,
@@ -78,6 +81,9 @@ const traceEventCodeLabelMap = new Map<string, string>([
   ["auth_redirect", "鉴权重定向"],
   ["flow_leave", "离开答题链路"],
 ]);
+
+/** 当前支持筛选的全部埋点事件码。 */
+export const traceEventCodes = [...traceEventCodeLabelMap.keys()];
 
 /** 判断值是否为可读取字段的普通对象。 */
 const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
