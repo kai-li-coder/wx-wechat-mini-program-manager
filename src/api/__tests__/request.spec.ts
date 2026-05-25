@@ -49,10 +49,10 @@ describe("request utils", () => {
     expect(
       resolveApiBase({
         apiBase: "",
-        apiServiceBase: " http://172.16.3.145:8080/ ",
+        apiServiceBase: " http://192.168.0.100:8080/ ",
         mode: "miniapp-development",
       }),
-    ).toBe("http://172.16.3.145:8080");
+    ).toBe("http://192.168.0.100:8080");
   });
 
   it("uses api base when miniapp service base is missing", () => {
