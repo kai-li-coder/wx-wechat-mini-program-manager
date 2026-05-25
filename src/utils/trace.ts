@@ -39,7 +39,22 @@ export interface TraceEventRankItem {
 const traceStageLabelMap = new Map<string, string>([
   ["interview_list_start", "面试列表开始"],
   ["link_page_on_load", "链接页加载"],
+  ["link_page_confirm_enter", "链接页确认进入"],
+  ["link_page_continue_enter", "链接页继续进入"],
   ["link_page_info_interview_fail", "链接页面试信息异常"],
+  ["person_info_page_on_load", "个人信息页加载"],
+  ["person_info_confirm_success", "个人信息确认成功"],
+  ["device_check_pass", "设备检测通过"],
+  ["guide_page_mounted", "引导页挂载"],
+  ["guide_page_loaded", "引导页加载完成"],
+  ["guide_page_start_answer", "引导页开始答题"],
+  ["guide_page_load_fail", "引导页加载异常"],
+  ["answer_short_on_show", "短答页显示"],
+  ["answer_short_interrupt_check", "短答页中断检测"],
+  ["answer_short_interrupt_check_fail", "短答页中断检测异常"],
+  ["answer_short_to_interrupt_page", "短答页跳转中断页"],
+  ["answer_short_to_interview_page", "短答页跳转面试页"],
+  ["interrupt_page_on_load", "中断页加载"],
   ["camera_init_timeout", "摄像头初始化超时"],
   ["camera_init_fail", "摄像头初始化失败"],
   ["record_stop_timeout", "录制停止超时"],
@@ -48,14 +63,20 @@ const traceStageLabelMap = new Map<string, string>([
   ["submit_fail", "提交失败"],
   ["unexpected_hide", "页面异常隐藏"],
   ["interrupt_continue", "中断后继续"],
+  ["end_page_mounted", "结束页挂载"],
+  ["end_page_load_fail", "结束页加载异常"],
+  ["request_auth_check", "请求鉴权检测"],
   ["flow_enter", "进入答题链路"],
   ["business_fail", "业务异常"],
+  ["codex_production_telemetry_check", "生产埋点连通性检测"],
 ]);
 
 /** 事件码中文文案字典。 */
 const traceEventCodeLabelMap = new Map<string, string>([
   ...traceStageLabelMap,
   ["interrupt_check", "中断检测"],
+  ["auth_redirect", "鉴权重定向"],
+  ["flow_leave", "离开答题链路"],
 ]);
 
 /** 判断值是否为可读取字段的普通对象。 */
