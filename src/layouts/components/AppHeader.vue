@@ -46,7 +46,7 @@ const router = useRouter();
 /** 退出登录状态。 */
 const isLoggingOut = ref(false);
 /** 当前接口服务展示名称。 */
-const serviceLabel = import.meta.env.VITE_SERVICE_LABEL?.trim() || "本地后端 8080";
+const serviceLabel = import.meta.env.VITE_SERVICE_LABEL?.trim() || "当前服务";
 
 /** 头像兜底文案。 */
 const avatarText = computed(() => authStore.userName.slice(0, 1).toUpperCase());

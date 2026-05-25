@@ -19,6 +19,12 @@
       <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
       <el-table-column label="错误信息" min-width="240" prop="errorMessage" show-overflow-tooltip />
       <el-table-column label="事件码" min-width="170" prop="eventCode" show-overflow-tooltip />
+      <el-table-column label="终端型号" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 终端型号 -->
+          {{ formatTraceTerminalModel(row.deviceInfo) }}
+        </template>
+      </el-table-column>
       <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 服务端记录时间 -->
@@ -55,7 +61,11 @@
 import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { resolveTraceEventRowKey, resolveTraceEventServerTime } from "@/utils/trace";
+import {
+  formatTraceTerminalModel,
+  resolveTraceEventRowKey,
+  resolveTraceEventServerTime,
+} from "@/utils/trace";
 
 const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
   /** 错误日志事件列表。 */

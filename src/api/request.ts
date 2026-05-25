@@ -27,32 +27,35 @@ export interface TraceApiResponse<T> {
 interface ApiBaseResolveOptions {
   /** 当前启动模式。 */
   mode?: string;
-  /** 接口请求基础前缀。 */
+  /** 接口请求基础地址。 */
   apiBase?: string;
   /** 请求服务基础地址。 */
   apiServiceBase?: string;
 }
 
+/** 默认接口请求基础地址。 */
+export const DEFAULT_API_BASE = "/api";
+
 /** 小程序开发环境模式名。 */
 export const MINIAPP_DEVELOPMENT_MODE = "miniapp-development";
-
-/** 小程序开发环境默认请求服务基础地址。 */
-export const MINIAPP_DEVELOPMENT_API_SERVICE_BASE = "http://192.168.0.100:8080";
 
 /** 清理 URL 尾部斜杠，避免 Axios 拼接路径时出现双斜杠。 */
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
+/** 规范化接口基础地址。 */
+const normalizeApiBase = (value?: string) => trimTrailingSlash(value?.trim() ?? "");
+
 /** 解析 Axios 请求基础地址。 */
 export const resolveApiBase = (options: ApiBaseResolveOptions = {}) => {
   const currentMode = options.mode ?? import.meta.env.MODE;
-  const apiBase = options.apiBase ?? import.meta.env.VITE_API_BASE;
-  const apiServiceBase = options.apiServiceBase ?? import.meta.env.VITE_API_SERVICE_BASE;
+  const apiBase = normalizeApiBase(options.apiBase ?? import.meta.env.VITE_API_BASE);
+  const apiServiceBase = normalizeApiBase(options.apiServiceBase ?? import.meta.env.VITE_API_SERVICE_BASE);
 
   if (currentMode === MINIAPP_DEVELOPMENT_MODE) {
-    return trimTrailingSlash(apiServiceBase?.trim() || MINIAPP_DEVELOPMENT_API_SERVICE_BASE);
+    return apiServiceBase || apiBase || DEFAULT_API_BASE;
   }
 
-  return apiBase?.trim() || "/api";
+  return apiBase || DEFAULT_API_BASE;
 };
 
 /** Axios 请求基础地址。 */

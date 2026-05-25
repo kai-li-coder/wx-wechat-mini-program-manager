@@ -24,6 +24,12 @@
         </template>
       </el-table-column>
       <el-table-column align="right" label="耗时(ms)" prop="durationMs" width="110" />
+      <el-table-column label="终端型号" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 终端型号 -->
+          {{ formatTraceTerminalModel(row.deviceInfo) }}
+        </template>
+      </el-table-column>
       <el-table-column label="错误码" min-width="150" prop="errorCode" show-overflow-tooltip />
       <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
@@ -60,7 +66,12 @@
 import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatTraceStage, resolveTraceEventRowKey, resolveTraceEventServerTime } from "@/utils/trace";
+import {
+  formatTraceStage,
+  formatTraceTerminalModel,
+  resolveTraceEventRowKey,
+  resolveTraceEventServerTime,
+} from "@/utils/trace";
 
 const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
   /** 链路事件列表。 */

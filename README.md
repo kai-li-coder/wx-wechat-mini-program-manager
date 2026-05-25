@@ -4,7 +4,7 @@
 
 ## 本地启动
 
-先确保本地后端 `ai-training-backend` 已运行在 `http://localhost:8080`。
+开发环境服务地址已与 `wansaiwap` 小程序项目保持一致：`http://172.16.3.145:8080`。
 
 ```bash
 pnpm install
@@ -17,7 +17,7 @@ pnpm dev
 http://localhost:5174
 ```
 
-如需对齐微信小程序当前开发环境服务（`http://192.168.0.100:8080`），启动额外测试服务：
+如需以小程序开发模式启动额外测试服务：
 
 ```bash
 pnpm dev:miniapp
@@ -31,8 +31,9 @@ http://localhost:5175
 
 ## 功能范围
 
-- 埋点总览：对接 `/api/admin/candidate/trace/metrics`
-- 链路事件：对接 `/api/admin/candidate/trace/flow`
+- 生产环境服务地址：`https://aihire.welsend.com/prod-api`
+- 埋点总览：对接 `/admin/candidate/trace/metrics`
+- 链路事件：对接 `/admin/candidate/trace/flow`
 - 错误日志：基于指定链路中的 `fail` / `warning` 埋点展示
 
 首版为本地免登录模式，不新增或修改后端接口。

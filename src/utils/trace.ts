@@ -52,6 +52,35 @@ const traceStageLabelMap = new Map<string, string>([
   ["business_fail", "业务异常"],
 ]);
 
+/** 判断值是否为可读取字段的普通对象。 */
+const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** 解析设备信息对象，兼容后端直接返回 JSON 字符串的场景。 */
+const resolveTraceDeviceInfo = (deviceInfo: unknown): Record<string, unknown> | null => {
+  if (isTraceRecord(deviceInfo)) {
+    return deviceInfo;
+  }
+
+  if (typeof deviceInfo !== "string") {
+    return null;
+  }
+
+  try {
+    const parsedDeviceInfo: unknown = JSON.parse(deviceInfo);
+    if (isTraceRecord(parsedDeviceInfo)) {
+      return parsedDeviceInfo;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
+/** 格式化设备字段展示值。 */
+const formatTraceDeviceField = (fieldValue: unknown) => String(fieldValue ?? "").trim();
+
 /** 格式化链路事件阶段。 */
 export const formatTraceStage = (stage?: string) => {
   /** 清理后的阶段编码。 */
@@ -75,6 +104,24 @@ export const resolveTraceEventRowKey = (eventItem: TraceEventItem) => {
 /** 获取服务端记录时间，优先使用实际返回的创建时间。 */
 export const resolveTraceEventServerTime = (eventItem: TraceEventItem) =>
   eventItem.createdAt || eventItem.serverTime;
+
+/** 格式化终端型号，展示品牌与型号拼接值。 */
+export const formatTraceTerminalModel = (deviceInfo: unknown) => {
+  /** 解析后的设备信息。 */
+  const resolvedDeviceInfo = resolveTraceDeviceInfo(deviceInfo);
+  if (!resolvedDeviceInfo) {
+    return "-";
+  }
+
+  /** 终端品牌。 */
+  const brand = formatTraceDeviceField(resolvedDeviceInfo.brand);
+  /** 终端型号。 */
+  const model = formatTraceDeviceField(resolvedDeviceInfo.model);
+  /** 终端型号展示文本。 */
+  const terminalModel = `${brand}-${model}`;
+
+  return terminalModel || "-";
+};
 
 /** 统计埋点聚合摘要。 */
 export const aggregateMetricSummary = (metricItems: TraceMetricItem[]): TraceMetricSummary =>

@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   attachAuthorizationHeader,
   createAuthorizationHeader,
+  DEFAULT_API_BASE,
   handleUnauthorizedResponse,
-  MINIAPP_DEVELOPMENT_API_SERVICE_BASE,
   resolveApiBase,
   unwrapTraceResponse,
 } from "@/api/request";
@@ -36,22 +36,34 @@ describe("request utils", () => {
 
   it("resolves default api base outside miniapp development mode", () => {
     expect(resolveApiBase({ apiBase: " /custom-api ", mode: "development" })).toBe("/custom-api");
-    expect(resolveApiBase({ apiBase: "", mode: "development" })).toBe("/api");
+    expect(resolveApiBase({ apiBase: "", mode: "development" })).toBe(DEFAULT_API_BASE);
+  });
+
+  it("trims trailing slash from configured api base", () => {
+    expect(resolveApiBase({ apiBase: " https://example.com/prod-api/ ", mode: "production" })).toBe(
+      "https://example.com/prod-api",
+    );
   });
 
   it("resolves service base when miniapp api base is empty", () => {
     expect(
       resolveApiBase({
         apiBase: "",
-        apiServiceBase: " http://192.168.0.100:8080/ ",
+        apiServiceBase: " http://172.16.3.145:8080/ ",
         mode: "miniapp-development",
       }),
-    ).toBe("http://192.168.0.100:8080");
+    ).toBe("http://172.16.3.145:8080");
   });
 
-  it("uses default miniapp service base when service env is missing", () => {
+  it("uses api base when miniapp service base is missing", () => {
+    expect(resolveApiBase({ apiBase: " /api ", apiServiceBase: "", mode: "miniapp-development" })).toBe(
+      DEFAULT_API_BASE,
+    );
+  });
+
+  it("uses default api base when miniapp service env is missing", () => {
     expect(resolveApiBase({ apiBase: "", apiServiceBase: "", mode: "miniapp-development" })).toBe(
-      MINIAPP_DEVELOPMENT_API_SERVICE_BASE,
+      DEFAULT_API_BASE,
     );
   });
 

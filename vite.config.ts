@@ -13,18 +13,30 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
 /** 规范化本地代理目标地址。 */
 const resolveProxyTarget = (value?: string) => {
-  const proxyTarget = value?.trim() || "http://localhost:8080";
-  return trimTrailingSlash(proxyTarget);
+  const proxyTarget = value?.trim();
+  return proxyTarget ? trimTrailingSlash(proxyTarget) : "";
 };
+
+/** 判断接口基础地址是否可以作为 Vite 代理前缀。 */
+const isProxyPath = (value: string) => value.startsWith("/");
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   /** 当前模式下的环境变量。 */
   const envConfig = loadEnv(mode, process.cwd(), "");
-  /** 接口代理前缀，默认与后端 /api 路由保持一致。 */
+  /** 接口请求基础地址，可以是路径前缀或绝对 URL。 */
   const apiBase = envConfig.VITE_API_BASE?.trim() || "/api";
-  /** 本地 ai-training-backend 代理目标。 */
+  /** 本地开发代理目标。 */
   const apiProxyTarget = resolveProxyTarget(envConfig.VITE_API_PROXY_TARGET);
+  /** Vite 代理配置仅在接口基础地址为路径前缀时启用。 */
+  const proxyConfig = isProxyPath(apiBase) && apiProxyTarget
+    ? {
+        [apiBase]: {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+      }
+    : undefined;
 
   return {
     plugins: [
@@ -61,12 +73,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       port: 5174,
-      proxy: {
-        [apiBase]: {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-      },
+      proxy: proxyConfig,
     },
     css: {
       preprocessorOptions: {

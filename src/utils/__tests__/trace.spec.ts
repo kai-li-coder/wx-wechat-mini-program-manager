@@ -6,6 +6,7 @@ import {
   aggregateMetricSummary,
   filterErrorEvents,
   formatTraceStage,
+  formatTraceTerminalModel,
   resolveTraceEventRowKey,
   resolveTraceEventServerTime,
   toEventRankItems,
@@ -102,6 +103,12 @@ describe("trace utils", () => {
     expect(formatTraceStage("oss_upload_fail")).toBe("OSS 上传失败");
     expect(formatTraceStage("custom_stage")).toBe("custom_stage");
     expect(formatTraceStage("")).toBe("-");
+  });
+
+  it("formats terminal model from device brand and model", () => {
+    expect(formatTraceTerminalModel({ brand: "Apple", model: "iPhone 15 Pro" })).toBe("AppleiPhone 15 Pro");
+    expect(formatTraceTerminalModel('{"brand":"Xiaomi","model":"14"}')).toBe("Xiaomi14");
+    expect(formatTraceTerminalModel({ brand: "", model: "" })).toBe("-");
   });
 
   it("filters only error events", () => {
