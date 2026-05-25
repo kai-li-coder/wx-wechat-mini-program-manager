@@ -8,7 +8,7 @@
         <el-descriptions-item label="事件 ID">{{ eventItem.eventId }}</el-descriptions-item>
         <el-descriptions-item label="Flow ID">{{ eventItem.flowId }}</el-descriptions-item>
         <el-descriptions-item label="候选人 ID">{{ eventItem.interviewCandidateId ?? "-" }}</el-descriptions-item>
-        <el-descriptions-item label="事件码">{{ eventItem.eventCode }}</el-descriptions-item>
+        <el-descriptions-item label="事件码">{{ formatTraceEventCode(eventItem.eventCode) }}</el-descriptions-item>
         <el-descriptions-item label="阶段">{{ formatTraceStage(eventItem.stage) }}</el-descriptions-item>
         <el-descriptions-item label="结果">
           <ResultTag :result="eventItem.result" />
@@ -42,7 +42,7 @@ import type { TraceEventItem } from "@/api/trace";
 import JsonViewer from "@/components/JsonViewer.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatTraceStage, resolveTraceEventServerTime } from "@/utils/trace";
+import { formatTraceEventCode, formatTraceStage, resolveTraceEventServerTime } from "@/utils/trace";
 
 /** 抽屉显示状态。 */
 const drawerVisible = ref(false);

@@ -9,7 +9,12 @@
 
     <!-- 排行表格 -->
     <el-table :data="rankItems" empty-text="暂无排行数据">
-      <el-table-column label="事件码" min-width="180" prop="eventCode" show-overflow-tooltip />
+      <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 事件码中文文案 -->
+          {{ formatTraceEventCode(row.eventCode) }}
+        </template>
+      </el-table-column>
       <el-table-column align="right" label="事件数" prop="eventCount" width="110" />
       <el-table-column align="right" label="链路数" prop="flowCount" width="110" />
       <el-table-column align="right" label="候选人数" prop="candidateCount" width="110" />
@@ -18,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TraceEventRankItem } from "@/utils/trace";
+import { formatTraceEventCode, type TraceEventRankItem } from "@/utils/trace";
 
 defineProps<{
   /** 事件码排行列表。 */

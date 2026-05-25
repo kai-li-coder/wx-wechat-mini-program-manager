@@ -10,10 +10,15 @@
           {{ formatDisplayDateTime(row.clientTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="事件码" min-width="170" prop="eventCode" show-overflow-tooltip />
+      <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 事件码中文文案 -->
+          {{ formatTraceEventCode(row.eventCode) }}
+        </template>
+      </el-table-column>
       <el-table-column label="阶段" min-width="160" show-overflow-tooltip>
         <template #default="{ row }">
-          <!-- 阶段中文文案 -->
+          <!-- 阶段中文与编码文案 -->
           {{ formatTraceStage(row.stage) }}
         </template>
       </el-table-column>
@@ -67,6 +72,7 @@ import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
 import {
+  formatTraceEventCode,
   formatTraceStage,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,

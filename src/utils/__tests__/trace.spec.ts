@@ -5,6 +5,7 @@ import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
 import {
   aggregateMetricSummary,
   filterErrorEvents,
+  formatTraceEventCode,
   formatTraceStage,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,
@@ -100,14 +101,21 @@ describe("trace utils", () => {
   });
 
   it("formats trace stage labels", () => {
-    expect(formatTraceStage("oss_upload_fail")).toBe("OSS 上传失败");
+    expect(formatTraceStage("oss_upload_fail")).toBe("OSS 上传失败（oss_upload_fail）");
     expect(formatTraceStage("custom_stage")).toBe("custom_stage");
     expect(formatTraceStage("")).toBe("-");
   });
 
+  it("formats trace event code labels", () => {
+    expect(formatTraceEventCode("upload_fail")).toBe("上传失败（upload_fail）");
+    expect(formatTraceEventCode("interrupt_check")).toBe("中断检测（interrupt_check）");
+    expect(formatTraceEventCode("custom_event")).toBe("custom_event");
+    expect(formatTraceEventCode("")).toBe("-");
+  });
+
   it("formats terminal model from device brand and model", () => {
-    expect(formatTraceTerminalModel({ brand: "Apple", model: "iPhone 15 Pro" })).toBe("AppleiPhone 15 Pro");
-    expect(formatTraceTerminalModel('{"brand":"Xiaomi","model":"14"}')).toBe("Xiaomi14");
+    expect(formatTraceTerminalModel({ brand: "Apple", model: "iPhone 15 Pro" })).toBe("Apple-iPhone 15 Pro");
+    expect(formatTraceTerminalModel('{"brand":"Xiaomi","model":"14"}')).toBe("Xiaomi-14");
     expect(formatTraceTerminalModel({ brand: "", model: "" })).toBe("-");
   });
 

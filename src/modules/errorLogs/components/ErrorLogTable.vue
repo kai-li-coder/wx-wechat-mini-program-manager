@@ -18,7 +18,12 @@
       </el-table-column>
       <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
       <el-table-column label="错误信息" min-width="240" prop="errorMessage" show-overflow-tooltip />
-      <el-table-column label="事件码" min-width="170" prop="eventCode" show-overflow-tooltip />
+      <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
+        <template #default="{ row }">
+          <!-- 事件码中文文案 -->
+          {{ formatTraceEventCode(row.eventCode) }}
+        </template>
+      </el-table-column>
       <el-table-column label="终端型号" min-width="160" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 终端型号 -->
@@ -62,6 +67,7 @@ import type { TraceEventItem } from "@/api/trace";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
 import {
+  formatTraceEventCode,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,
   resolveTraceEventServerTime,

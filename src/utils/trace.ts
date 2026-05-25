@@ -52,6 +52,12 @@ const traceStageLabelMap = new Map<string, string>([
   ["business_fail", "业务异常"],
 ]);
 
+/** 事件码中文文案字典。 */
+const traceEventCodeLabelMap = new Map<string, string>([
+  ...traceStageLabelMap,
+  ["interrupt_check", "中断检测"],
+]);
+
 /** 判断值是否为可读取字段的普通对象。 */
 const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -81,7 +87,7 @@ const resolveTraceDeviceInfo = (deviceInfo: unknown): Record<string, unknown> | 
 /** 格式化设备字段展示值。 */
 const formatTraceDeviceField = (fieldValue: unknown) => String(fieldValue ?? "").trim();
 
-/** 格式化链路事件阶段。 */
+/** 格式化链路事件阶段，展示中文文案与原始阶段编码。 */
 export const formatTraceStage = (stage?: string) => {
   /** 清理后的阶段编码。 */
   const normalizedStage = String(stage ?? "").trim();
@@ -89,7 +95,30 @@ export const formatTraceStage = (stage?: string) => {
     return "-";
   }
 
-  return traceStageLabelMap.get(normalizedStage) ?? normalizedStage;
+  /** 阶段中文文案。 */
+  const stageLabel = traceStageLabelMap.get(normalizedStage);
+  if (!stageLabel) {
+    return normalizedStage;
+  }
+
+  return `${stageLabel}（${normalizedStage}）`;
+};
+
+/** 格式化埋点事件码，展示中文文案与原始编码。 */
+export const formatTraceEventCode = (eventCode?: string) => {
+  /** 清理后的事件码。 */
+  const normalizedEventCode = String(eventCode ?? "").trim();
+  if (!normalizedEventCode) {
+    return "-";
+  }
+
+  /** 事件码中文文案。 */
+  const eventCodeLabel = traceEventCodeLabelMap.get(normalizedEventCode);
+  if (!eventCodeLabel) {
+    return normalizedEventCode;
+  }
+
+  return `${eventCodeLabel}（${normalizedEventCode}）`;
 };
 
 /** 获取链路事件表格稳定行键。 */
