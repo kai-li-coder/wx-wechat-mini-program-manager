@@ -1,5 +1,41 @@
 // 埋点查询选项配置。
+import dayjs from "dayjs";
+
 import { formatTraceEventCode, formatTraceStage, traceEventCodes, traceStageCodes } from "@/utils/trace";
+
+/** 日期范围快捷项。 */
+interface DateRangeShortcut {
+  /** 快捷项名称。 */
+  text: string;
+  /** 快捷项日期范围。 */
+  value: () => [Date, Date];
+}
+
+/** 创建日期范围快捷项值。 */
+const createDateRangeShortcutValue = (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): [Date, Date] => [
+  startDate.startOf("day").toDate(),
+  endDate.startOf("day").toDate(),
+];
+
+/** 获取本周周一日期。 */
+const resolveCurrentWeekStart = () => {
+  /** 当前日期。 */
+  const currentDate = dayjs();
+  /** 距离周一的天数。 */
+  const mondayOffset = (currentDate.day() + 6) % 7;
+
+  return currentDate.subtract(mondayOffset, "day").startOf("day");
+};
+
+/** 获取本季度起始月份。 */
+const resolveCurrentQuarterStart = () => {
+  /** 当前日期。 */
+  const currentDate = dayjs();
+  /** 当前季度起始月份下标。 */
+  const quarterStartMonth = Math.floor(currentDate.month() / 3) * 3;
+
+  return currentDate.month(quarterStartMonth).startOf("month");
+};
 
 /** 埋点结果选项。 */
 const resultOptions = [
@@ -14,6 +50,40 @@ const errorResultOptions = [
   { label: "全部异常", value: "" },
   { label: "失败", value: "fail" },
   { label: "警告", value: "warning" },
+];
+
+/** 埋点总览日期范围快捷项。 */
+const dashboardDateRangeShortcuts: DateRangeShortcut[] = [
+  {
+    text: "本年",
+    value: () => createDateRangeShortcutValue(dayjs().startOf("year"), dayjs()),
+  },
+  {
+    text: "本季度",
+    value: () => {
+      /** 本季度起始日期。 */
+      const quarterStartDate = resolveCurrentQuarterStart();
+
+      return createDateRangeShortcutValue(quarterStartDate, quarterStartDate.add(2, "month").endOf("month"));
+    },
+  },
+  {
+    text: "本月",
+    value: () => createDateRangeShortcutValue(dayjs().startOf("month"), dayjs()),
+  },
+  {
+    text: "本周",
+    value: () => {
+      /** 本周周一日期。 */
+      const weekStartDate = resolveCurrentWeekStart();
+
+      return createDateRangeShortcutValue(weekStartDate, weekStartDate.add(6, "day"));
+    },
+  },
+  {
+    text: "本日",
+    value: () => createDateRangeShortcutValue(dayjs(), dayjs()),
+  },
 ];
 
 /** 全部埋点事件码选项。 */
@@ -34,4 +104,5 @@ export const useTraceOptions = () => ({
   errorResultOptions,
   eventCodeOptions,
   stageOptions,
+  dashboardDateRangeShortcuts,
 });

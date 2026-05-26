@@ -2,6 +2,7 @@
 import dayjs from "dayjs";
 
 import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
+import { TRACE_DATE_TIME_FORMAT } from "@/utils/date";
 
 /** 埋点聚合汇总结果。 */
 export interface TraceMetricSummary {
@@ -17,12 +18,33 @@ export interface TraceMetricSummary {
 export interface TraceTrendRow {
   /** 小时粒度时间。 */
   metricHour: string;
+  /** 趋势图展示标签。 */
+  metricLabel?: string;
   /** 失败事件数。 */
   failCount: number;
   /** 警告事件数。 */
   warningCount: number;
   /** 成功事件数。 */
   successCount: number;
+}
+
+/** 趋势图聚合粒度。 */
+type TraceTrendGranularity = "month" | "day" | "hour";
+
+/** 趋势图构建选项。 */
+export interface TraceTrendBuildOptions {
+  /** 查询开始时间。 */
+  startTime?: string;
+  /** 查询结束时间。 */
+  endTime?: string;
+}
+
+/** 趋势图坐标轴项。 */
+interface TraceTrendAxisItem {
+  /** 坐标轴聚合键。 */
+  metricHour: string;
+  /** 坐标轴展示标签。 */
+  metricLabel: string;
 }
 
 /** 事件码排行项。 */
@@ -305,8 +327,177 @@ export const toMetricItemsFromEvents = (eventItems: TraceEventItem[]): TraceMetr
     .sort((leftItem, rightItem) => leftItem.metricHour.localeCompare(rightItem.metricHour));
 };
 
+/** 解析趋势图时间范围。 */
+const resolveTrendDateRange = (options?: TraceTrendBuildOptions) => {
+  if (!options?.startTime || !options.endTime) {
+    return null;
+  }
+
+  /** 开始时间对象。 */
+  const startDateTime = dayjs(options.startTime);
+  /** 结束时间对象。 */
+  const endDateTime = dayjs(options.endTime);
+  if (!startDateTime.isValid() || !endDateTime.isValid()) {
+    return null;
+  }
+
+  return { startDateTime, endDateTime };
+};
+
+/** 解析趋势图聚合粒度。 */
+const resolveTrendGranularity = (startDateTime: dayjs.Dayjs, endDateTime: dayjs.Dayjs): TraceTrendGranularity => {
+  if (startDateTime.isSame(endDateTime, "day")) {
+    return "hour";
+  }
+
+  if (endDateTime.diff(startDateTime, "day") > 31) {
+    return "month";
+  }
+
+  return "day";
+};
+
+/** 格式化趋势图聚合键。 */
+const formatTrendBucketKey = (dateTime: dayjs.Dayjs, granularity: TraceTrendGranularity) => {
+  if (granularity === "month") {
+    return dateTime.startOf("month").format(TRACE_DATE_TIME_FORMAT);
+  }
+
+  if (granularity === "day") {
+    return dateTime.startOf("day").format(TRACE_DATE_TIME_FORMAT);
+  }
+
+  return dateTime.startOf("hour").format(TRACE_DATE_TIME_FORMAT);
+};
+
+/** 格式化趋势图坐标轴标签。 */
+const formatTrendBucketLabel = (dateTime: dayjs.Dayjs, granularity: TraceTrendGranularity) => {
+  if (granularity === "month") {
+    return `${dateTime.month() + 1}月`;
+  }
+
+  if (granularity === "day") {
+    return dateTime.format("MM-DD");
+  }
+
+  return `${dateTime.hour()}点`;
+};
+
+/** 创建趋势图坐标轴项。 */
+const createTrendAxisItems = (
+  startDateTime: dayjs.Dayjs,
+  endDateTime: dayjs.Dayjs,
+  granularity: TraceTrendGranularity,
+) => {
+  /** 坐标轴项列表。 */
+  const trendAxisItems: TraceTrendAxisItem[] = [];
+
+  if (granularity === "hour") {
+    /** 当日日期。 */
+    const currentDay = startDateTime.startOf("day");
+    for (let hour = 8; hour <= 22; hour += 1) {
+      /** 小时坐标点。 */
+      const hourDateTime = currentDay.hour(hour);
+      trendAxisItems.push({
+        metricHour: formatTrendBucketKey(hourDateTime, granularity),
+        metricLabel: formatTrendBucketLabel(hourDateTime, granularity),
+      });
+    }
+
+    return trendAxisItems;
+  }
+
+  /** 坐标轴循环游标。 */
+  let cursorDateTime = granularity === "month" ? startDateTime.startOf("month") : startDateTime.startOf("day");
+  /** 坐标轴结束游标。 */
+  const endCursorDateTime = granularity === "month" ? endDateTime.startOf("month") : endDateTime.startOf("day");
+
+  while (cursorDateTime.isBefore(endCursorDateTime) || cursorDateTime.isSame(endCursorDateTime)) {
+    trendAxisItems.push({
+      metricHour: formatTrendBucketKey(cursorDateTime, granularity),
+      metricLabel: formatTrendBucketLabel(cursorDateTime, granularity),
+    });
+    cursorDateTime = cursorDateTime.add(1, granularity);
+  }
+
+  return trendAxisItems;
+};
+
+/** 累加趋势图行事件数。 */
+const appendTrendRowCount = (trendRow: TraceTrendRow, metricItem: TraceMetricItem) => {
+  if (metricItem.result === "fail") {
+    trendRow.failCount += metricItem.eventCount;
+    return;
+  }
+
+  if (metricItem.result === "warning") {
+    trendRow.warningCount += metricItem.eventCount;
+    return;
+  }
+
+  trendRow.successCount += metricItem.eventCount;
+};
+
+/** 按指定时间范围转换趋势图行。 */
+const toRangedMetricTrendRows = (
+  metricItems: TraceMetricItem[],
+  startDateTime: dayjs.Dayjs,
+  endDateTime: dayjs.Dayjs,
+) => {
+  /** 趋势图聚合粒度。 */
+  const granularity = resolveTrendGranularity(startDateTime, endDateTime);
+  /** 坐标轴项列表。 */
+  const trendAxisItems = createTrendAxisItems(startDateTime, endDateTime, granularity);
+  /** 按坐标轴聚合后的趋势数据。 */
+  const trendRowMap = new Map<string, TraceTrendRow>(
+    trendAxisItems.map((axisItem) => [
+      axisItem.metricHour,
+      {
+        metricHour: axisItem.metricHour,
+        metricLabel: axisItem.metricLabel,
+        failCount: 0,
+        warningCount: 0,
+        successCount: 0,
+      },
+    ]),
+  );
+
+  metricItems.forEach((metricItem) => {
+    /** 聚合时间对象。 */
+    const metricDateTime = dayjs(metricItem.metricHour);
+    if (!metricDateTime.isValid()) {
+      return;
+    }
+
+    /** 坐标轴聚合键。 */
+    const trendBucketKey = formatTrendBucketKey(metricDateTime, granularity);
+    /** 趋势图行。 */
+    const trendRow = trendRowMap.get(trendBucketKey);
+    if (!trendRow) {
+      return;
+    }
+
+    appendTrendRowCount(trendRow, metricItem);
+  });
+
+  return [...trendRowMap.values()];
+};
+
 /** 将聚合数据转换为趋势图行。 */
-export const toMetricTrendRows = (metricItems: TraceMetricItem[]): TraceTrendRow[] => {
+export const toMetricTrendRows = (
+  metricItems: TraceMetricItem[],
+  options?: TraceTrendBuildOptions,
+): TraceTrendRow[] => {
+  /** 趋势图时间范围。 */
+  const trendDateRange = resolveTrendDateRange(options);
+  if (trendDateRange) {
+    return toRangedMetricTrendRows(
+      metricItems,
+      trendDateRange.startDateTime,
+      trendDateRange.endDateTime,
+    );
+  }
+
   /** 按小时分组后的趋势数据。 */
   const trendRowMap = new Map<string, TraceTrendRow>();
 
@@ -318,13 +509,7 @@ export const toMetricTrendRows = (metricItems: TraceMetricItem[]): TraceTrendRow
       successCount: 0,
     };
 
-    if (metricItem.result === "fail") {
-      trendRow.failCount += metricItem.eventCount;
-    } else if (metricItem.result === "warning") {
-      trendRow.warningCount += metricItem.eventCount;
-    } else {
-      trendRow.successCount += metricItem.eventCount;
-    }
+    appendTrendRowCount(trendRow, metricItem);
 
     trendRowMap.set(metricItem.metricHour, trendRow);
   });

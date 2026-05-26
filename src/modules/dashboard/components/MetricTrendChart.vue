@@ -6,7 +6,7 @@
       <!-- 图表标题栏 -->
       <div class="chart-card__header">
         <span>异常趋势</span>
-        <el-tag effect="plain">按小时聚合</el-tag>
+        <el-tag effect="plain">{{ trendGranularityText }}</el-tag>
       </div>
     </template>
 
@@ -26,17 +26,43 @@ import { toMetricTrendRows } from "@/utils/trace";
 
 echarts.use([GridComponent, LegendComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
 
-const { metricItems, loading = false } = defineProps<{
+const { metricItems, loading = false, startTime, endTime } = defineProps<{
   /** 埋点聚合列表。 */
   metricItems: TraceMetricItem[];
   /** 图表加载状态。 */
   loading?: boolean;
+  /** 查询开始时间。 */
+  startTime?: string;
+  /** 查询结束时间。 */
+  endTime?: string;
 }>();
 
 /** 图表根节点。 */
 const chartRootRef = useTemplateRef<HTMLDivElement>("chartRoot");
 /** ECharts 图表实例。 */
 let chartInstance: echarts.ECharts | null = null;
+
+/** 趋势图聚合文案。 */
+const trendGranularityText = computed(() => {
+  if (!startTime || !endTime) {
+    return "按小时聚合";
+  }
+
+  /** 开始日期。 */
+  const startDate = startTime.slice(0, 10);
+  /** 结束日期。 */
+  const endDate = endTime.slice(0, 10);
+  if (startDate === endDate) {
+    return "按小时聚合";
+  }
+
+  /** 日期间隔毫秒数。 */
+  const dateRangeDuration = new Date(endDate).getTime() - new Date(startDate).getTime();
+  /** 日期间隔天数。 */
+  const dateRangeDays = dateRangeDuration / 86_400_000;
+
+  return dateRangeDays > 31 ? "按月聚合" : "按日聚合";
+});
 
 /** 渲染趋势图。 */
 const renderChart = () => {
@@ -49,7 +75,7 @@ const renderChart = () => {
   }
 
   /** 趋势图行数据。 */
-  const trendRows = toMetricTrendRows(metricItems);
+  const trendRows = toMetricTrendRows(metricItems, { startTime, endTime });
   chartInstance.setOption({
     color: ["#ef4444", "#f59e0b", "#10b981"],
     tooltip: { trigger: "axis" },
@@ -57,7 +83,7 @@ const renderChart = () => {
     grid: { top: 44, right: 16, bottom: 32, left: 40 },
     xAxis: {
       type: "category",
-      data: trendRows.map((trendRow) => trendRow.metricHour.slice(5, 16)),
+      data: trendRows.map((trendRow) => trendRow.metricLabel ?? trendRow.metricHour.slice(5, 16)),
       axisTick: { show: false },
     },
     yAxis: {
@@ -83,7 +109,7 @@ const renderChart = () => {
   });
 };
 
-watch(() => metricItems, renderChart, { deep: true });
+watch(() => [metricItems, startTime, endTime], renderChart, { deep: true });
 
 tryOnMounted(() => {
   renderChart();

@@ -127,6 +127,81 @@ describe("trace utils", () => {
     ]);
   });
 
+  it("builds ranged trend rows by selected date range", () => {
+    const yearlyTrendRows = toMetricTrendRows(metricItems, {
+      startTime: "2026-01-01 00:00:00",
+      endTime: "2026-05-20 23:59:59",
+    });
+    const quarterlyTrendRows = toMetricTrendRows(metricItems, {
+      startTime: "2026-04-01 00:00:00",
+      endTime: "2026-06-30 23:59:59",
+    });
+    const monthlyTrendRows = toMetricTrendRows(metricItems, {
+      startTime: "2026-05-01 00:00:00",
+      endTime: "2026-05-20 23:59:59",
+    });
+    const weeklyTrendRows = toMetricTrendRows(metricItems, {
+      startTime: "2026-05-18 00:00:00",
+      endTime: "2026-05-24 23:59:59",
+    });
+    const dailyTrendRows = toMetricTrendRows(metricItems, {
+      startTime: "2026-05-20 08:00:00",
+      endTime: "2026-05-20 22:59:59",
+    });
+
+    expect(yearlyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual(["1月", "2月", "3月", "4月", "5月"]);
+    expect(quarterlyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual(["4月", "5月", "6月"]);
+    expect(monthlyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
+      "05-01",
+      "05-02",
+      "05-03",
+      "05-04",
+      "05-05",
+      "05-06",
+      "05-07",
+      "05-08",
+      "05-09",
+      "05-10",
+      "05-11",
+      "05-12",
+      "05-13",
+      "05-14",
+      "05-15",
+      "05-16",
+      "05-17",
+      "05-18",
+      "05-19",
+      "05-20",
+    ]);
+    expect(weeklyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
+      "05-18",
+      "05-19",
+      "05-20",
+      "05-21",
+      "05-22",
+      "05-23",
+      "05-24",
+    ]);
+    expect(dailyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
+      "8点",
+      "9点",
+      "10点",
+      "11点",
+      "12点",
+      "13点",
+      "14点",
+      "15点",
+      "16点",
+      "17点",
+      "18点",
+      "19点",
+      "20点",
+      "21点",
+      "22点",
+    ]);
+    expect(dailyTrendRows[2]).toMatchObject({ metricLabel: "10点", failCount: 2, warningCount: 1 });
+  });
+
   it("builds metric items from events with classified results", () => {
     const normalFailEventItem = {
       ...createEventItem("fail"),

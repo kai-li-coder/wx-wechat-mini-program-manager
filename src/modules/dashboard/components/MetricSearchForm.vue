@@ -4,24 +4,16 @@
   <el-card class="query-card" shadow="never">
     <el-form :model="queryForm" class="query-form" label-width="84px">
       <!-- 时间范围筛选 -->
-      <el-form-item label="开始时间">
+      <el-form-item class="query-form__range" label="时间范围">
         <el-date-picker
-          v-model="queryForm.startTime"
-          format="YYYY-MM-DD HH:mm:ss"
-          placeholder="选择开始时间"
-          type="datetime"
-          value-format="YYYY-MM-DD HH:mm:ss"
-        />
-      </el-form-item>
-
-      <!-- 结束时间筛选 -->
-      <el-form-item label="结束时间">
-        <el-date-picker
-          v-model="queryForm.endTime"
-          format="YYYY-MM-DD HH:mm:ss"
-          placeholder="选择结束时间"
-          type="datetime"
-          value-format="YYYY-MM-DD HH:mm:ss"
+          v-model="serverDateRange"
+          :shortcuts="dashboardDateRangeShortcuts"
+          end-placeholder="结束日期"
+          format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          type="daterange"
+          value-format="YYYY-MM-DD"
         />
       </el-form-item>
 
@@ -65,8 +57,11 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from "dayjs";
+
 import type { TraceMetricQuery } from "@/api/trace";
 import { useTraceOptions } from "@/modules/trace/composables/useTraceOptions";
+import { formatTraceDate, formatTraceDateTime } from "@/utils/date";
 
 const queryForm = defineModel<TraceMetricQuery>({ required: true });
 
@@ -83,5 +78,58 @@ const emit = defineEmits<{
 }>();
 
 /** 埋点查询选项。 */
-const { resultOptions, eventCodeOptions } = useTraceOptions();
+const { resultOptions, eventCodeOptions, dashboardDateRangeShortcuts } = useTraceOptions();
+
+/** 转换日期范围选择器开始时间。 */
+const toDateRangeStartTime = (startDate: string, endDate: string) => {
+  /** 开始日期对象。 */
+  const startDateTime = dayjs(startDate).startOf("day");
+  /** 结束日期对象。 */
+  const endDateTime = dayjs(endDate).startOf("day");
+  if (startDateTime.isSame(endDateTime, "day")) {
+    return formatTraceDateTime(startDateTime.hour(8));
+  }
+
+  return formatTraceDateTime(startDateTime);
+};
+
+/** 转换日期范围选择器结束时间。 */
+const toDateRangeEndTime = (startDate: string, endDate: string) => {
+  /** 开始日期对象。 */
+  const startDateTime = dayjs(startDate).startOf("day");
+  /** 结束日期对象。 */
+  const endDateTime = dayjs(endDate).startOf("day");
+  if (startDateTime.isSame(endDateTime, "day")) {
+    return formatTraceDateTime(endDateTime.hour(22).minute(59).second(59));
+  }
+
+  return formatTraceDateTime(endDateTime.hour(23).minute(59).second(59));
+};
+
+/** 服务端时间日期范围。 */
+const serverDateRange = computed<string[] | null>({
+  get: () => {
+    /** 服务端开始时间。 */
+    const startTime = queryForm.value.startTime;
+    /** 服务端结束时间。 */
+    const endTime = queryForm.value.endTime;
+    if (!startTime || !endTime) {
+      return null;
+    }
+
+    return [formatTraceDate(startTime), formatTraceDate(endTime)];
+  },
+  set: (selectedDateRange) => {
+    /** 选择后的开始日期。 */
+    const [startDate = "", endDate = ""] = selectedDateRange ?? [];
+    if (!startDate || !endDate) {
+      queryForm.value.startTime = "";
+      queryForm.value.endTime = "";
+      return;
+    }
+
+    queryForm.value.startTime = toDateRangeStartTime(startDate, endDate);
+    queryForm.value.endTime = toDateRangeEndTime(startDate, endDate);
+  },
+});
 </script>

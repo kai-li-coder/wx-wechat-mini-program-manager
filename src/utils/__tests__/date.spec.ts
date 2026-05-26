@@ -1,11 +1,21 @@
 // 日期工具单元测试。
 import { describe, expect, it, vi } from "vitest";
 
-import { createRecent24HourRange, formatDisplayDateTime, formatTraceDateTime } from "@/utils/date";
+import {
+  createRecent24HourRange,
+  createTodayTraceRange,
+  formatDisplayDateTime,
+  formatTraceDate,
+  formatTraceDateTime,
+} from "@/utils/date";
 
 describe("date utils", () => {
   it("formats backend trace datetime", () => {
     expect(formatTraceDateTime("2026-05-20T10:15:30+08:00")).toBe("2026-05-20 10:15:30");
+  });
+
+  it("formats trace date", () => {
+    expect(formatTraceDate("2026-05-20T10:15:30+08:00")).toBe("2026-05-20");
   });
 
   it("formats display datetime", () => {
@@ -19,6 +29,17 @@ describe("date utils", () => {
     expect(createRecent24HourRange()).toEqual({
       startTime: "2026-05-19 10:00:00",
       endTime: "2026-05-20 10:00:00",
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("creates today trace range from 8 to 22", () => {
+    vi.setSystemTime(new Date("2026-05-20T10:15:30+08:00"));
+
+    expect(createTodayTraceRange()).toEqual({
+      startTime: "2026-05-20 08:00:00",
+      endTime: "2026-05-20 22:59:59",
     });
 
     vi.useRealTimers();

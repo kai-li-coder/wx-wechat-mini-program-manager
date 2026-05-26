@@ -17,7 +17,12 @@
 
     <!-- 图表与排行区 -->
     <div class="dashboard-page__content">
-      <MetricTrendChart :loading="isLoading" :metric-items="metricItems" />
+      <MetricTrendChart
+        :end-time="appliedEndTime"
+        :loading="isLoading"
+        :metric-items="metricItems"
+        :start-time="appliedStartTime"
+      />
       <EventRankTable :rank-items="eventRankItems" />
     </div>
   </section>
@@ -31,7 +36,7 @@ import EventRankTable from "@/modules/dashboard/components/EventRankTable.vue";
 import MetricSearchForm from "@/modules/dashboard/components/MetricSearchForm.vue";
 import MetricSummary from "@/modules/dashboard/components/MetricSummary.vue";
 import MetricTrendChart from "@/modules/dashboard/components/MetricTrendChart.vue";
-import { createRecent24HourRange } from "@/utils/date";
+import { createTodayTraceRange } from "@/utils/date";
 import {
   aggregateMetricSummary,
   resolveTraceEventResult,
@@ -44,7 +49,7 @@ const DASHBOARD_EVENT_PAGE_SIZE = 200;
 
 /** 创建默认聚合查询条件。 */
 const createDefaultMetricQuery = (): TraceMetricQuery => ({
-  ...createRecent24HourRange(),
+  ...createTodayTraceRange(),
   eventCode: "",
   result: "",
 });
@@ -55,6 +60,10 @@ const metricQueryForm = ref<TraceMetricQuery>(createDefaultMetricQuery());
 const eventItems = ref<TraceEventItem[]>([]);
 /** 已应用的结果筛选值。 */
 const appliedResultFilter = ref("");
+/** 已应用的开始时间。 */
+const appliedStartTime = ref(metricQueryForm.value.startTime);
+/** 已应用的结束时间。 */
+const appliedEndTime = ref(metricQueryForm.value.endTime);
 /** 页面加载状态。 */
 const isLoading = ref(false);
 
@@ -115,6 +124,8 @@ const handleSearch = async () => {
   try {
     eventItems.value = await queryDashboardEventItems();
     appliedResultFilter.value = String(metricQueryForm.value.result ?? "").trim();
+    appliedStartTime.value = metricQueryForm.value.startTime;
+    appliedEndTime.value = metricQueryForm.value.endTime;
   } finally {
     isLoading.value = false;
   }
