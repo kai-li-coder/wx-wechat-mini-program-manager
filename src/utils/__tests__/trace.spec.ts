@@ -13,6 +13,7 @@ import {
   resolveTraceEventServerTime,
   toClientTimeDescEventItems,
   toEventRankItems,
+  toMetricItemsFromEvents,
   toMetricTrendRows,
 } from "@/utils/trace";
 
@@ -122,6 +123,41 @@ describe("trace utils", () => {
         failCount: 0,
         warningCount: 0,
         successCount: 3,
+      },
+    ]);
+  });
+
+  it("builds metric items from events with classified results", () => {
+    const normalFailEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_fail",
+      flowId: "flow_fail",
+      interviewCandidateId: 1001,
+      serverTime: "2026-05-20T10:12:01",
+    };
+    const warningErrorCodeEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_warning_code",
+      flowId: "flow_warning_code",
+      interviewCandidateId: 1002,
+      errorCode: "NO_TOKEN",
+      serverTime: "2026-05-20T10:30:01",
+    };
+    const warningErrorMessageEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_warning_message",
+      flowId: "flow_warning_message",
+      interviewCandidateId: 1003,
+      errorMessage: "面试已交卷",
+      serverTime: "2026-05-20T10:45:01",
+    };
+
+    expect(toMetricTrendRows(toMetricItemsFromEvents([normalFailEventItem, warningErrorCodeEventItem, warningErrorMessageEventItem]))).toEqual([
+      {
+        metricHour: "2026-05-20 10:00:00",
+        failCount: 1,
+        warningCount: 2,
+        successCount: 0,
       },
     ]);
   });

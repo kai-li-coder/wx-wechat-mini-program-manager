@@ -24,15 +24,23 @@
 </template>
 
 <script setup lang="ts">
-import type { TraceMetricQuery } from "@/api/trace";
-import { queryTraceMetrics } from "@/api/trace";
+import type { TraceEventItem, TraceFlowQuery, TraceMetricQuery } from "@/api/trace";
+import { queryTraceFlow } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
 import EventRankTable from "@/modules/dashboard/components/EventRankTable.vue";
 import MetricSearchForm from "@/modules/dashboard/components/MetricSearchForm.vue";
 import MetricSummary from "@/modules/dashboard/components/MetricSummary.vue";
 import MetricTrendChart from "@/modules/dashboard/components/MetricTrendChart.vue";
 import { createRecent24HourRange } from "@/utils/date";
-import { aggregateMetricSummary, toEventRankItems } from "@/utils/trace";
+import {
+  aggregateMetricSummary,
+  resolveTraceEventResult,
+  toEventRankItems,
+  toMetricItemsFromEvents,
+} from "@/utils/trace";
+
+/** 总览页事件明细分页大小。 */
+const DASHBOARD_EVENT_PAGE_SIZE = 200;
 
 /** 创建默认聚合查询条件。 */
 const createDefaultMetricQuery = (): TraceMetricQuery => ({
@@ -43,21 +51,70 @@ const createDefaultMetricQuery = (): TraceMetricQuery => ({
 
 /** 聚合查询表单。 */
 const metricQueryForm = ref<TraceMetricQuery>(createDefaultMetricQuery());
-/** 聚合数据列表。 */
-const metricItems = ref<Awaited<ReturnType<typeof queryTraceMetrics>>>([]);
+/** 总览页链路事件明细。 */
+const eventItems = ref<TraceEventItem[]>([]);
+/** 已应用的结果筛选值。 */
+const appliedResultFilter = ref("");
 /** 页面加载状态。 */
 const isLoading = ref(false);
 
+/** 按归类结果筛选后的链路事件明细。 */
+const filteredEventItems = computed(() => {
+  /** 结果筛选值。 */
+  if (!appliedResultFilter.value) {
+    return eventItems.value;
+  }
+
+  return eventItems.value.filter((eventItem) => resolveTraceEventResult(eventItem) === appliedResultFilter.value);
+});
+/** 聚合数据列表。 */
+const metricItems = computed(() => toMetricItemsFromEvents(filteredEventItems.value));
 /** 埋点聚合摘要。 */
 const metricSummary = computed(() => aggregateMetricSummary(metricItems.value));
 /** 事件码排行列表。 */
 const eventRankItems = computed(() => toEventRankItems(metricItems.value));
 
+/** 创建总览页链路事件查询条件。 */
+const createDashboardFlowQuery = (pageNum: number): TraceFlowQuery => ({
+  eventCode: metricQueryForm.value.eventCode,
+  startTime: metricQueryForm.value.startTime,
+  endTime: metricQueryForm.value.endTime,
+  pageNum,
+  pageSize: DASHBOARD_EVENT_PAGE_SIZE,
+});
+
+/** 查询总览页全部链路事件明细。 */
+const queryDashboardEventItems = async () => {
+  /** 第一页事件查询结果。 */
+  const firstPageResult = await queryTraceFlow(createDashboardFlowQuery(1));
+  /** 已查询事件列表。 */
+  const queriedEventItems = [...firstPageResult.records];
+  /** 总页数。 */
+  const pageCount = Math.ceil(firstPageResult.total / DASHBOARD_EVENT_PAGE_SIZE);
+  if (pageCount <= 1) {
+    return queriedEventItems;
+  }
+
+  /** 剩余页码列表。 */
+  const remainingPageNums = Array.from({ length: pageCount - 1 }, (_, pageIndex) => pageIndex + 2);
+  /** 剩余页查询结果。 */
+  const remainingPageResults = await Promise.all(
+    remainingPageNums.map((pageNum) => queryTraceFlow(createDashboardFlowQuery(pageNum))),
+  );
+
+  remainingPageResults.forEach((pageResult) => {
+    queriedEventItems.push(...pageResult.records);
+  });
+
+  return queriedEventItems;
+};
+
 /** 查询聚合数据。 */
 const handleSearch = async () => {
   isLoading.value = true;
   try {
-    metricItems.value = await queryTraceMetrics(metricQueryForm.value);
+    eventItems.value = await queryDashboardEventItems();
+    appliedResultFilter.value = String(metricQueryForm.value.result ?? "").trim();
   } finally {
     isLoading.value = false;
   }

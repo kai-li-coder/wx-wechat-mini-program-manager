@@ -37,6 +37,16 @@ export interface TraceEventRankItem {
   candidateCount: number;
 }
 
+/** 埋点聚合构建中间项。 */
+interface TraceMetricBuildItem {
+  /** 聚合项。 */
+  metricItem: TraceMetricItem;
+  /** 涉及链路集合。 */
+  flowIdSet: Set<string>;
+  /** 涉及候选人集合。 */
+  candidateIdSet: Set<number>;
+}
+
 /** 阶段中文文案字典。 */
 const traceStageLabelMap = new Map<string, string>([
   ["interview_list_start", "面试列表开始"],
@@ -235,6 +245,65 @@ export const aggregateMetricSummary = (metricItems: TraceMetricItem[]): TraceMet
     }),
     { eventCount: 0, flowCount: 0, candidateCount: 0 },
   );
+
+/** 将事件服务端时间转换为小时聚合时间。 */
+const toMetricHour = (eventItem: TraceEventItem) => {
+  /** 服务端记录时间对象。 */
+  const serverDateTime = dayjs(resolveTraceEventServerTime(eventItem));
+
+  return serverDateTime.isValid() ? serverDateTime.startOf("hour").format("YYYY-MM-DD HH:mm:ss") : "";
+};
+
+/** 将链路事件明细转换为前端聚合数据。 */
+export const toMetricItemsFromEvents = (eventItems: TraceEventItem[]): TraceMetricItem[] => {
+  /** 聚合中间数据字典。 */
+  const metricBuildItemMap = new Map<string, TraceMetricBuildItem>();
+
+  eventItems.forEach((eventItem) => {
+    /** 小时聚合时间。 */
+    const metricHour = toMetricHour(eventItem);
+    if (!metricHour) {
+      return;
+    }
+
+    /** 归类后的事件结果。 */
+    const resolvedEventResult = resolveTraceEventResult(eventItem);
+    /** 聚合唯一键。 */
+    const metricKey = `${metricHour}\u0001${eventItem.eventCode}\u0001${resolvedEventResult}`;
+    /** 聚合中间项。 */
+    const metricBuildItem =
+      metricBuildItemMap.get(metricKey) ??
+      ({
+        metricItem: {
+          metricHour,
+          eventCode: eventItem.eventCode,
+          result: resolvedEventResult,
+          eventCount: 0,
+          flowCount: 0,
+          candidateCount: 0,
+        },
+        flowIdSet: new Set<string>(),
+        candidateIdSet: new Set<number>(),
+      } satisfies TraceMetricBuildItem);
+
+    metricBuildItem.metricItem.eventCount += 1;
+    if (eventItem.flowId) {
+      metricBuildItem.flowIdSet.add(eventItem.flowId);
+    }
+    if (eventItem.interviewCandidateId !== null) {
+      metricBuildItem.candidateIdSet.add(eventItem.interviewCandidateId);
+    }
+    metricBuildItemMap.set(metricKey, metricBuildItem);
+  });
+
+  return [...metricBuildItemMap.values()]
+    .map(({ metricItem, flowIdSet, candidateIdSet }) => ({
+      ...metricItem,
+      flowCount: flowIdSet.size,
+      candidateCount: candidateIdSet.size,
+    }))
+    .sort((leftItem, rightItem) => leftItem.metricHour.localeCompare(rightItem.metricHour));
+};
 
 /** 将聚合数据转换为趋势图行。 */
 export const toMetricTrendRows = (metricItems: TraceMetricItem[]): TraceTrendRow[] => {
