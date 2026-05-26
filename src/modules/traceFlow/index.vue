@@ -10,7 +10,7 @@
 
     <!-- 链路事件表格区 -->
     <FlowEventTable
-      :event-items="eventItems"
+      :event-items="clientTimeDescEventItems"
       :loading="isLoading"
       :page-num="flowQueryForm.pageNum || 1"
       :page-size="flowQueryForm.pageSize || 50"
@@ -32,6 +32,7 @@ import PageHeader from "@/components/PageHeader.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
 import FlowEventTable from "@/modules/traceFlow/components/FlowEventTable.vue";
 import FlowSearchForm from "@/modules/traceFlow/components/FlowSearchForm.vue";
+import { toClientTimeDescEventItems } from "@/utils/trace";
 
 /** 创建默认链路查询条件。 */
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
@@ -60,6 +61,8 @@ const total = ref(0);
 const isLoading = ref(false);
 /** 事件详情抽屉引用。 */
 const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
+/** 按客户端时间倒序展示的链路事件列表。 */
+const clientTimeDescEventItems = computed(() => toClientTimeDescEventItems(eventItems.value));
 
 /** 查询链路事件。 */
 const handleSearch = async () => {

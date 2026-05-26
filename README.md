@@ -1,6 +1,6 @@
 # wx-wechat-mini-program-manager
 
-招人 More 微信小程序后台管理系统（本次测试使用）。
+招人 More 招人More微信小程序埋点检测系统。
 
 ## 本地启动
 

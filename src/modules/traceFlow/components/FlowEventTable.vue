@@ -25,7 +25,7 @@
       <el-table-column label="结果" width="96">
         <template #default="{ row }">
           <!-- 结果标签 -->
-          <ResultTag :result="row.result" />
+          <ResultTag :result="resolveTraceEventResult(row)" />
         </template>
       </el-table-column>
       <el-table-column align="right" label="耗时(ms)" prop="durationMs" width="110" />
@@ -76,6 +76,7 @@ import {
   formatTraceStage,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,
+  resolveTraceEventResult,
   resolveTraceEventServerTime,
 } from "@/utils/trace";
 

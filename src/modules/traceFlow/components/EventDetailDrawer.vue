@@ -11,7 +11,7 @@
         <el-descriptions-item label="事件码">{{ formatTraceEventCode(eventItem.eventCode) }}</el-descriptions-item>
         <el-descriptions-item label="阶段">{{ formatTraceStage(eventItem.stage) }}</el-descriptions-item>
         <el-descriptions-item label="结果">
-          <ResultTag :result="eventItem.result" />
+          <ResultTag :result="resolveTraceEventResult(eventItem)" />
         </el-descriptions-item>
         <el-descriptions-item label="错误码">{{ eventItem.errorCode || "-" }}</el-descriptions-item>
         <el-descriptions-item label="错误信息">{{ eventItem.errorMessage || "-" }}</el-descriptions-item>
@@ -42,7 +42,12 @@ import type { TraceEventItem } from "@/api/trace";
 import JsonViewer from "@/components/JsonViewer.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatTraceEventCode, formatTraceStage, resolveTraceEventServerTime } from "@/utils/trace";
+import {
+  formatTraceEventCode,
+  formatTraceStage,
+  resolveTraceEventResult,
+  resolveTraceEventServerTime,
+} from "@/utils/trace";
 
 /** 抽屉显示状态。 */
 const drawerVisible = ref(false);

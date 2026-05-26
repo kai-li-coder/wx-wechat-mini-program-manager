@@ -6,7 +6,7 @@
     <section class="login-page__brand">
       <div class="login-page__logo">埋</div>
       <h1 class="login-page__title">Trace Admin</h1>
-      <p class="login-page__subtitle">微信小程序后台管理系统</p>
+      <p class="login-page__subtitle">招人More微信小程序埋点检测系统</p>
     </section>
 
     <!-- 登录表单区域 -->

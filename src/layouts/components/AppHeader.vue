@@ -12,7 +12,7 @@
         @click="appStore.toggleSidebarCollapsed"
       />
       <div class="app-header__title">
-        <span class="app-header__name">微信小程序后台管理系统</span>
+        <span class="app-header__name">招人More微信小程序埋点检测系统</span>
         <span class="app-header__subtitle">本地埋点与异常观测</span>
       </div>
     </div>

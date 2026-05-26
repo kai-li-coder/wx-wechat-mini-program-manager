@@ -1,4 +1,6 @@
 // 埋点数据聚合和过滤工具。
+import dayjs from "dayjs";
+
 import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
 
 /** 埋点聚合汇总结果。 */
@@ -85,6 +87,11 @@ const traceEventCodeLabelMap = new Map<string, string>([
 /** 当前支持筛选的全部埋点事件码。 */
 export const traceEventCodes = [...traceEventCodeLabelMap.keys()];
 
+/** 需要按警告归类的错误码集合。 */
+const warningErrorCodeSet = new Set(["NO_TOKEN"]);
+/** 需要按警告归类的错误信息集合。 */
+const warningErrorMessageSet = new Set(["未登录，请先登录", "摄像头或麦克风未授权", "面试已交卷"]);
+
 /** 判断值是否为可读取字段的普通对象。 */
 const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -160,6 +167,45 @@ export const resolveTraceEventRowKey = (eventItem: TraceEventItem) => {
 /** 获取服务端记录时间，优先使用实际返回的创建时间。 */
 export const resolveTraceEventServerTime = (eventItem: TraceEventItem) =>
   eventItem.createdAt || eventItem.serverTime;
+
+/** 获取链路事件归类后的结果，指定错误码和错误信息统一按警告展示和筛选。 */
+export const resolveTraceEventResult = (eventItem: TraceEventItem) => {
+  /** 标准化后的错误码。 */
+  const normalizedErrorCode = String(eventItem.errorCode ?? "")
+    .trim()
+    .toUpperCase();
+  /** 标准化后的错误信息。 */
+  const normalizedErrorMessage = String(eventItem.errorMessage ?? "").trim();
+
+  if (warningErrorCodeSet.has(normalizedErrorCode) || warningErrorMessageSet.has(normalizedErrorMessage)) {
+    return "warning";
+  }
+
+  return eventItem.result;
+};
+
+/** 获取客户端时间排序值，无效客户端时间排在末尾。 */
+const resolveClientTimeSortValue = (eventItem: TraceEventItem) => {
+  /** 客户端时间对象。 */
+  const clientDateTime = dayjs(eventItem.clientTime);
+
+  return clientDateTime.isValid() ? clientDateTime.valueOf() : Number.NEGATIVE_INFINITY;
+};
+
+/** 按客户端时间倒序返回新的链路事件列表。 */
+export const toClientTimeDescEventItems = (eventItems: TraceEventItem[]) =>
+  [...eventItems].sort((leftEventItem, rightEventItem) => {
+    /** 左侧事件客户端时间排序值。 */
+    const leftClientTimeValue = resolveClientTimeSortValue(leftEventItem);
+    /** 右侧事件客户端时间排序值。 */
+    const rightClientTimeValue = resolveClientTimeSortValue(rightEventItem);
+
+    if (leftClientTimeValue === rightClientTimeValue) {
+      return 0;
+    }
+
+    return rightClientTimeValue - leftClientTimeValue;
+  });
 
 /** 格式化终端型号，展示品牌与型号拼接值。 */
 export const formatTraceTerminalModel = (deviceInfo: unknown) => {
@@ -246,7 +292,10 @@ export const toEventRankItems = (metricItems: TraceMetricItem[]): TraceEventRank
 /** 筛选错误日志事件。 */
 export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: string) =>
   eventItems.filter((eventItem) => {
-    const isErrorEvent = eventItem.result === "fail" || eventItem.result === "warning";
+    /** 归类后的事件结果。 */
+    const resolvedEventResult = resolveTraceEventResult(eventItem);
+    /** 是否属于错误日志展示范围。 */
+    const isErrorEvent = resolvedEventResult === "fail" || resolvedEventResult === "warning";
     if (!isErrorEvent) {
       return false;
     }
@@ -255,5 +304,5 @@ export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: s
       return true;
     }
 
-    return eventItem.result === resultFilter;
+    return resolvedEventResult === resultFilter;
   });

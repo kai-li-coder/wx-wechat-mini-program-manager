@@ -13,7 +13,7 @@
       <el-table-column label="结果" width="96">
         <template #default="{ row }">
           <!-- 结果标签 -->
-          <ResultTag :result="row.result" />
+          <ResultTag :result="resolveTraceEventResult(row)" />
         </template>
       </el-table-column>
       <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
@@ -70,6 +70,7 @@ import {
   formatTraceEventCode,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,
+  resolveTraceEventResult,
   resolveTraceEventServerTime,
 } from "@/utils/trace";
 

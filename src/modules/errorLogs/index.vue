@@ -38,7 +38,7 @@ import PageHeader from "@/components/PageHeader.vue";
 import ErrorLogSearchForm from "@/modules/errorLogs/components/ErrorLogSearchForm.vue";
 import ErrorLogTable from "@/modules/errorLogs/components/ErrorLogTable.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
-import { filterErrorEvents } from "@/utils/trace";
+import { filterErrorEvents, toClientTimeDescEventItems } from "@/utils/trace";
 
 /** 创建默认错误日志查询条件。 */
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
@@ -65,7 +65,9 @@ const isLoading = ref(false);
 const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 
 /** 错误日志列表。 */
-const errorEventItems = computed(() => filterErrorEvents(eventItems.value, resultFilter.value));
+const errorEventItems = computed(() =>
+  toClientTimeDescEventItems(filterErrorEvents(eventItems.value, resultFilter.value)),
+);
 /** 错误日志总数。 */
 const errorTotal = computed(() => errorEventItems.value.length);
 

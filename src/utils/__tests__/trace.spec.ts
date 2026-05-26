@@ -9,7 +9,9 @@ import {
   formatTraceStage,
   formatTraceTerminalModel,
   resolveTraceEventRowKey,
+  resolveTraceEventResult,
   resolveTraceEventServerTime,
+  toClientTimeDescEventItems,
   toEventRankItems,
   toMetricTrendRows,
 } from "@/utils/trace";
@@ -159,6 +161,62 @@ describe("trace utils", () => {
 
     expect(filterErrorEvents(eventItems).map((eventItem) => eventItem.result)).toEqual(["fail", "warning"]);
     expect(filterErrorEvents(eventItems, "fail").map((eventItem) => eventItem.result)).toEqual(["fail"]);
+  });
+
+  it("classifies NO_TOKEN events as warning", () => {
+    const noTokenEventItem = {
+      ...createEventItem("fail"),
+      errorCode: " no_token ",
+    };
+
+    expect(resolveTraceEventResult(noTokenEventItem)).toBe("warning");
+    expect(filterErrorEvents([noTokenEventItem], "warning")).toEqual([noTokenEventItem]);
+    expect(filterErrorEvents([noTokenEventItem], "fail")).toEqual([]);
+  });
+
+  it("classifies specified error messages as warning", () => {
+    const warningErrorMessages = ["未登录，请先登录", "摄像头或麦克风未授权", "面试已交卷"];
+
+    warningErrorMessages.forEach((errorMessage) => {
+      const warningMessageEventItem = {
+        ...createEventItem("fail"),
+        errorMessage: ` ${errorMessage} `,
+      };
+
+      expect(resolveTraceEventResult(warningMessageEventItem)).toBe("warning");
+      expect(filterErrorEvents([warningMessageEventItem], "warning")).toEqual([warningMessageEventItem]);
+      expect(filterErrorEvents([warningMessageEventItem], "fail")).toEqual([]);
+    });
+  });
+
+  it("sorts events by client time desc without mutating source", () => {
+    const olderEventItem = {
+      ...createEventItem("success"),
+      eventId: "evt_older",
+      clientTime: "2026-05-20T10:00:00",
+    };
+    const invalidTimeEventItem = {
+      ...createEventItem("success"),
+      eventId: "evt_invalid",
+      clientTime: "",
+    };
+    const latestEventItem = {
+      ...createEventItem("success"),
+      eventId: "evt_latest",
+      clientTime: "2026-05-20T10:30:00",
+    };
+    const eventItems = [olderEventItem, invalidTimeEventItem, latestEventItem];
+
+    expect(toClientTimeDescEventItems(eventItems).map((eventItem) => eventItem.eventId)).toEqual([
+      "evt_latest",
+      "evt_older",
+      "evt_invalid",
+    ]);
+    expect(eventItems.map((eventItem) => eventItem.eventId)).toEqual([
+      "evt_older",
+      "evt_invalid",
+      "evt_latest",
+    ]);
   });
 
   it("uses eventId as stable row key when backend omits id", () => {
