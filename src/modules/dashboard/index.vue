@@ -36,7 +36,7 @@
       <!-- 右侧分析区 -->
       <div class="dashboard-page__analysis">
         <TopErrorEventCodeChart :loading="isLoading" :metric-items="metricItems" />
-        <EventRankTable :rank-items="eventRankItems" />
+        <ErrorWarningPanel :loading="isLoading" :summary="errorWarningSummary" />
       </div>
     </div>
   </section>
@@ -47,7 +47,7 @@ import type { TraceEventItem, TraceFlowQuery, TraceMetricQuery } from "@/api/tra
 import { queryTraceFlow } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
 import CandidateTrendChart from "@/modules/dashboard/components/CandidateTrendChart.vue";
-import EventRankTable from "@/modules/dashboard/components/EventRankTable.vue";
+import ErrorWarningPanel from "@/modules/dashboard/components/ErrorWarningPanel.vue";
 import MetricSearchForm from "@/modules/dashboard/components/MetricSearchForm.vue";
 import MetricSummary from "@/modules/dashboard/components/MetricSummary.vue";
 import MetricTrendChart from "@/modules/dashboard/components/MetricTrendChart.vue";
@@ -56,7 +56,7 @@ import { createTodayTraceRange } from "@/utils/date";
 import {
   aggregateMetricSummary,
   resolveTraceEventResult,
-  toEventRankItems,
+  toErrorWarningSummary,
   toMetricItemsFromEvents,
 } from "@/utils/trace";
 
@@ -74,6 +74,8 @@ const createDefaultMetricQuery = (): TraceMetricQuery => ({
 const metricQueryForm = ref<TraceMetricQuery>(createDefaultMetricQuery());
 /** 总览页链路事件明细。 */
 const eventItems = ref<TraceEventItem[]>([]);
+/** 错误预警链路事件明细。 */
+const warningEventItems = ref<TraceEventItem[]>([]);
 /** 已应用的结果筛选值。 */
 const appliedResultFilter = ref("");
 /** 已应用的开始时间。 */
@@ -96,8 +98,13 @@ const filteredEventItems = computed(() => {
 const metricItems = computed(() => toMetricItemsFromEvents(filteredEventItems.value));
 /** 埋点聚合摘要。 */
 const metricSummary = computed(() => aggregateMetricSummary(metricItems.value));
-/** 事件码排行列表。 */
-const eventRankItems = computed(() => toEventRankItems(metricItems.value));
+/** 错误预警摘要。 */
+const errorWarningSummary = computed(() =>
+  toErrorWarningSummary(warningEventItems.value, {
+    startTime: appliedStartTime.value,
+    endTime: appliedEndTime.value,
+  }),
+);
 
 /** 创建总览页链路事件查询条件。 */
 const createDashboardFlowQuery = (pageNum: number): TraceFlowQuery => ({
@@ -108,10 +115,18 @@ const createDashboardFlowQuery = (pageNum: number): TraceFlowQuery => ({
   pageSize: DASHBOARD_EVENT_PAGE_SIZE,
 });
 
-/** 查询总览页全部链路事件明细。 */
-const queryDashboardEventItems = async () => {
+/** 创建总览页错误预警查询条件。 */
+const createDashboardWarningFlowQuery = (pageNum: number): TraceFlowQuery => ({
+  startTime: metricQueryForm.value.startTime,
+  endTime: metricQueryForm.value.endTime,
+  pageNum,
+  pageSize: DASHBOARD_EVENT_PAGE_SIZE,
+});
+
+/** 查询总览页全部分页链路事件明细。 */
+const queryDashboardPagedEventItems = async (createFlowQuery: (pageNum: number) => TraceFlowQuery) => {
   /** 第一页事件查询结果。 */
-  const firstPageResult = await queryTraceFlow(createDashboardFlowQuery(1));
+  const firstPageResult = await queryTraceFlow(createFlowQuery(1));
   /** 已查询事件列表。 */
   const queriedEventItems = [...firstPageResult.records];
   /** 总页数。 */
@@ -124,7 +139,7 @@ const queryDashboardEventItems = async () => {
   const remainingPageNums = Array.from({ length: pageCount - 1 }, (_, pageIndex) => pageIndex + 2);
   /** 剩余页查询结果。 */
   const remainingPageResults = await Promise.all(
-    remainingPageNums.map((pageNum) => queryTraceFlow(createDashboardFlowQuery(pageNum))),
+    remainingPageNums.map((pageNum) => queryTraceFlow(createFlowQuery(pageNum))),
   );
 
   remainingPageResults.forEach((pageResult) => {
@@ -134,11 +149,23 @@ const queryDashboardEventItems = async () => {
   return queriedEventItems;
 };
 
+/** 查询总览页当前筛选链路事件明细。 */
+const queryDashboardEventItems = () => queryDashboardPagedEventItems(createDashboardFlowQuery);
+
+/** 查询总览页错误预警链路事件明细。 */
+const queryDashboardWarningEventItems = () => queryDashboardPagedEventItems(createDashboardWarningFlowQuery);
+
 /** 查询聚合数据。 */
 const handleSearch = async () => {
   isLoading.value = true;
   try {
-    eventItems.value = await queryDashboardEventItems();
+    /** 总览查询结果。 */
+    const [dashboardEventItems, dashboardWarningEventItems] = await Promise.all([
+      queryDashboardEventItems(),
+      queryDashboardWarningEventItems(),
+    ]);
+    eventItems.value = dashboardEventItems;
+    warningEventItems.value = dashboardWarningEventItems;
     appliedResultFilter.value = String(metricQueryForm.value.result ?? "").trim();
     appliedStartTime.value = metricQueryForm.value.startTime;
     appliedEndTime.value = metricQueryForm.value.endTime;

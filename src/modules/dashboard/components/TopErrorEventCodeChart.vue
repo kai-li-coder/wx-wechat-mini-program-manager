@@ -1,11 +1,11 @@
-<!-- 五大错误事件码图表组件 -->
+<!-- 五大错误码图表组件 -->
 <template>
-  <!-- 五大错误事件码卡片 -->
+  <!-- 五大错误码卡片 -->
   <el-card v-loading="loading" class="top-error-chart" shadow="never">
     <template #header>
       <!-- 图表标题栏 -->
       <div class="top-error-chart__header">
-        <span>五大错误事件码</span>
+        <span>五大错误码</span>
         <el-radio-group v-model="chartMode" size="small">
           <el-radio-button value="bar">条状图</el-radio-button>
           <el-radio-button value="line">折线图</el-radio-button>
@@ -139,7 +139,7 @@ const renderLineChart = (eventCodeLabels: string[], eventCounts: number[]) => {
   });
 };
 
-/** 渲染五大错误事件码图表。 */
+/** 渲染五大错误码图表。 */
 const renderChart = () => {
   if (!chartRootRef.value) {
     return;

@@ -2,7 +2,7 @@
 import dayjs from "dayjs";
 
 import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
-import { TRACE_DATE_TIME_FORMAT } from "@/utils/date";
+import { TRACE_DATE_FORMAT, TRACE_DATE_TIME_FORMAT } from "@/utils/date";
 
 /** 埋点聚合汇总结果。 */
 export interface TraceMetricSummary {
@@ -12,6 +12,31 @@ export interface TraceMetricSummary {
   flowCount: number;
   /** 涉及候选人数。 */
   candidateCount: number;
+}
+
+/** 错误预警等级。 */
+export type TraceErrorWarningLevel = "normal" | "watch" | "warning" | "critical";
+
+/** 错误预警摘要。 */
+export interface TraceErrorWarningSummary {
+  /** 预警等级。 */
+  level: TraceErrorWarningLevel;
+  /** 统计日期。 */
+  warningDate: string;
+  /** 事件总数。 */
+  eventCount: number;
+  /** 失败事件数。 */
+  failCount: number;
+  /** 失败事件占比。 */
+  failRate: number;
+  /** 候选人数。 */
+  candidateCount: number;
+  /** 受影响候选人数。 */
+  affectedCandidateCount: number;
+  /** 受影响候选人占比。 */
+  affectedCandidateRate: number;
+  /** 触发原因。 */
+  triggerReasons: string[];
 }
 
 /** 趋势图单个小时聚合项。 */
@@ -87,6 +112,20 @@ interface TraceCandidateTrendBuildItem {
   candidateIdSet: Set<number>;
 }
 
+/** 错误预警构建中间项。 */
+interface TraceErrorWarningBuildItem {
+  /** 统计日期。 */
+  warningDate: string;
+  /** 事件总数。 */
+  eventCount: number;
+  /** 失败事件数。 */
+  failCount: number;
+  /** 候选人集合。 */
+  candidateIdSet: Set<number>;
+  /** 受影响候选人集合。 */
+  affectedCandidateIdSet: Set<number>;
+}
+
 /** 阶段中文文案字典。 */
 const traceStageLabelMap = new Map<string, string>([
   ["interview_list_start", "面试列表开始"],
@@ -141,6 +180,41 @@ export const traceEventCodes = [...traceEventCodeLabelMap.keys()];
 const warningErrorCodeSet = new Set(["NO_TOKEN"]);
 /** 需要按警告归类的错误信息集合。 */
 const warningErrorMessageSet = new Set(["未登录，请先登录", "摄像头或麦克风未授权", "面试已交卷"]);
+/** 错误预警空摘要。 */
+const emptyErrorWarningSummary: TraceErrorWarningSummary = {
+  level: "normal",
+  warningDate: "",
+  eventCount: 0,
+  failCount: 0,
+  failRate: 0,
+  candidateCount: 0,
+  affectedCandidateCount: 0,
+  affectedCandidateRate: 0,
+  triggerReasons: [],
+};
+/** 错误观察占比阈值。 */
+const ERROR_WATCH_RATE_THRESHOLD = 0.03;
+/** 错误观察事件数阈值。 */
+const ERROR_WATCH_FAIL_COUNT_THRESHOLD = 5;
+/** 错误预警占比阈值。 */
+const ERROR_WARNING_RATE_THRESHOLD = 0.05;
+/** 错误预警事件数阈值。 */
+const ERROR_WARNING_FAIL_COUNT_THRESHOLD = 10;
+/** 严重错误占比阈值。 */
+const ERROR_CRITICAL_RATE_THRESHOLD = 0.1;
+/** 严重错误事件数阈值。 */
+const ERROR_CRITICAL_FAIL_COUNT_THRESHOLD = 10;
+/** 严重受影响候选人占比阈值。 */
+const ERROR_CRITICAL_AFFECTED_CANDIDATE_RATE_THRESHOLD = 0.05;
+/** 严重受影响候选人数阈值。 */
+const ERROR_CRITICAL_AFFECTED_CANDIDATE_COUNT_THRESHOLD = 3;
+/** 错误预警等级排序权重。 */
+const errorWarningLevelWeightMap = new Map<TraceErrorWarningLevel, number>([
+  ["normal", 0],
+  ["watch", 1],
+  ["warning", 2],
+  ["critical", 3],
+]);
 
 /** 判断值是否为可读取字段的普通对象。 */
 const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
@@ -673,6 +747,207 @@ export const toEventRankItems = (metricItems: TraceMetricItem[]): TraceEventRank
 /** 汇总失败事件码排行 Top N。 */
 export const toTopFailEventRankItems = (metricItems: TraceMetricItem[], limit = 5): TraceEventRankItem[] =>
   toEventRankItems(metricItems.filter((metricItem) => metricItem.result === "fail")).slice(0, limit);
+
+/** 创建错误预警构建中间项。 */
+const createErrorWarningBuildItem = (warningDate: string): TraceErrorWarningBuildItem => ({
+  warningDate,
+  eventCount: 0,
+  failCount: 0,
+  candidateIdSet: new Set<number>(),
+  affectedCandidateIdSet: new Set<number>(),
+});
+
+/** 获取错误预警等级。 */
+const resolveErrorWarningLevel = (
+  failRate: number,
+  failCount: number,
+  affectedCandidateRate: number,
+  affectedCandidateCount: number,
+): TraceErrorWarningLevel => {
+  /** 是否达到严重错误事件占比阈值。 */
+  const isCriticalFailRate =
+    failRate >= ERROR_CRITICAL_RATE_THRESHOLD && failCount >= ERROR_CRITICAL_FAIL_COUNT_THRESHOLD;
+  /** 是否达到严重受影响候选人占比阈值。 */
+  const isCriticalAffectedCandidateRate =
+    affectedCandidateRate >= ERROR_CRITICAL_AFFECTED_CANDIDATE_RATE_THRESHOLD &&
+    affectedCandidateCount >= ERROR_CRITICAL_AFFECTED_CANDIDATE_COUNT_THRESHOLD;
+  if (isCriticalFailRate || isCriticalAffectedCandidateRate) {
+    return "critical";
+  }
+
+  if (failRate >= ERROR_WARNING_RATE_THRESHOLD && failCount >= ERROR_WARNING_FAIL_COUNT_THRESHOLD) {
+    return "warning";
+  }
+
+  if (failRate >= ERROR_WATCH_RATE_THRESHOLD && failCount >= ERROR_WATCH_FAIL_COUNT_THRESHOLD) {
+    return "watch";
+  }
+
+  return "normal";
+};
+
+/** 创建错误预警触发原因。 */
+const createErrorWarningTriggerReasons = (
+  level: TraceErrorWarningLevel,
+  failRate: number,
+  failCount: number,
+  affectedCandidateRate: number,
+  affectedCandidateCount: number,
+) => {
+  /** 触发原因列表。 */
+  const triggerReasons: string[] = [];
+
+  if (level === "normal") {
+    return ["未达到观察预警阈值"];
+  }
+
+  if (failRate >= ERROR_WATCH_RATE_THRESHOLD && failCount >= ERROR_WATCH_FAIL_COUNT_THRESHOLD) {
+    triggerReasons.push("错误占比达到 3% 观察阈值");
+  }
+
+  if (failRate >= ERROR_WARNING_RATE_THRESHOLD && failCount >= ERROR_WARNING_FAIL_COUNT_THRESHOLD) {
+    triggerReasons.push("错误占比达到 5% 预警阈值");
+  }
+
+  if (failRate >= ERROR_CRITICAL_RATE_THRESHOLD && failCount >= ERROR_CRITICAL_FAIL_COUNT_THRESHOLD) {
+    triggerReasons.push("错误占比达到 10% 严重阈值");
+  }
+
+  if (
+    affectedCandidateRate >= ERROR_CRITICAL_AFFECTED_CANDIDATE_RATE_THRESHOLD &&
+    affectedCandidateCount >= ERROR_CRITICAL_AFFECTED_CANDIDATE_COUNT_THRESHOLD
+  ) {
+    triggerReasons.push("受影响候选人占比达到 5% 严重阈值");
+  }
+
+  return triggerReasons;
+};
+
+/** 将错误预警构建项转换为摘要。 */
+const toErrorWarningSummaryFromBuildItem = (
+  errorWarningBuildItem: TraceErrorWarningBuildItem,
+): TraceErrorWarningSummary => {
+  /** 候选人数。 */
+  const candidateCount = errorWarningBuildItem.candidateIdSet.size;
+  /** 受影响候选人数。 */
+  const affectedCandidateCount = errorWarningBuildItem.affectedCandidateIdSet.size;
+  /** 失败事件占比。 */
+  const failRate =
+    errorWarningBuildItem.eventCount > 0 ? errorWarningBuildItem.failCount / errorWarningBuildItem.eventCount : 0;
+  /** 受影响候选人占比。 */
+  const affectedCandidateRate = candidateCount > 0 ? affectedCandidateCount / candidateCount : 0;
+  /** 预警等级。 */
+  const level = resolveErrorWarningLevel(
+    failRate,
+    errorWarningBuildItem.failCount,
+    affectedCandidateRate,
+    affectedCandidateCount,
+  );
+
+  return {
+    level,
+    warningDate: errorWarningBuildItem.warningDate,
+    eventCount: errorWarningBuildItem.eventCount,
+    failCount: errorWarningBuildItem.failCount,
+    failRate,
+    candidateCount,
+    affectedCandidateCount,
+    affectedCandidateRate,
+    triggerReasons: createErrorWarningTriggerReasons(
+      level,
+      failRate,
+      errorWarningBuildItem.failCount,
+      affectedCandidateRate,
+      affectedCandidateCount,
+    ),
+  };
+};
+
+/** 比较错误预警风险高低。 */
+const compareErrorWarningRisk = (
+  leftSummary: TraceErrorWarningSummary,
+  rightSummary: TraceErrorWarningSummary,
+) => {
+  /** 左侧等级权重。 */
+  const leftLevelWeight = errorWarningLevelWeightMap.get(leftSummary.level) ?? 0;
+  /** 右侧等级权重。 */
+  const rightLevelWeight = errorWarningLevelWeightMap.get(rightSummary.level) ?? 0;
+  if (leftLevelWeight !== rightLevelWeight) {
+    return rightLevelWeight - leftLevelWeight;
+  }
+
+  if (leftSummary.failRate !== rightSummary.failRate) {
+    return rightSummary.failRate - leftSummary.failRate;
+  }
+
+  if (leftSummary.affectedCandidateRate !== rightSummary.affectedCandidateRate) {
+    return rightSummary.affectedCandidateRate - leftSummary.affectedCandidateRate;
+  }
+
+  if (leftSummary.failCount !== rightSummary.failCount) {
+    return rightSummary.failCount - leftSummary.failCount;
+  }
+
+  return rightSummary.warningDate.localeCompare(leftSummary.warningDate);
+};
+
+/** 创建空错误预警摘要。 */
+const createEmptyErrorWarningSummary = (options?: TraceTrendBuildOptions): TraceErrorWarningSummary => {
+  /** 查询开始时间对象。 */
+  const startDateTime = dayjs(options?.startTime);
+  if (!startDateTime.isValid()) {
+    return { ...emptyErrorWarningSummary };
+  }
+
+  return {
+    ...emptyErrorWarningSummary,
+    warningDate: startDateTime.format(TRACE_DATE_FORMAT),
+  };
+};
+
+/** 将链路事件明细转换为错误预警摘要。 */
+export const toErrorWarningSummary = (
+  eventItems: TraceEventItem[],
+  options?: TraceTrendBuildOptions,
+): TraceErrorWarningSummary => {
+  /** 按天聚合的错误预警构建数据。 */
+  const errorWarningBuildItemMap = new Map<string, TraceErrorWarningBuildItem>();
+
+  eventItems.forEach((eventItem) => {
+    /** 服务端记录时间对象。 */
+    const serverDateTime = dayjs(resolveTraceEventServerTime(eventItem));
+    if (!serverDateTime.isValid()) {
+      return;
+    }
+
+    /** 预警统计日期。 */
+    const warningDate = serverDateTime.format(TRACE_DATE_FORMAT);
+    /** 错误预警构建项。 */
+    const errorWarningBuildItem =
+      errorWarningBuildItemMap.get(warningDate) ?? createErrorWarningBuildItem(warningDate);
+    /** 归类后的事件结果。 */
+    const resolvedEventResult = resolveTraceEventResult(eventItem);
+
+    errorWarningBuildItem.eventCount += 1;
+    if (eventItem.interviewCandidateId !== null) {
+      errorWarningBuildItem.candidateIdSet.add(eventItem.interviewCandidateId);
+    }
+    if (resolvedEventResult === "fail") {
+      errorWarningBuildItem.failCount += 1;
+      if (eventItem.interviewCandidateId !== null) {
+        errorWarningBuildItem.affectedCandidateIdSet.add(eventItem.interviewCandidateId);
+      }
+    }
+    errorWarningBuildItemMap.set(warningDate, errorWarningBuildItem);
+  });
+
+  /** 错误预警摘要列表。 */
+  const errorWarningSummaries = [...errorWarningBuildItemMap.values()]
+    .map(toErrorWarningSummaryFromBuildItem)
+    .sort(compareErrorWarningRisk);
+
+  return errorWarningSummaries[0] ?? createEmptyErrorWarningSummary(options);
+};
 
 /** 筛选错误日志事件。 */
 export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: string) =>

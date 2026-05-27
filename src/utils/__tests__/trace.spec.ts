@@ -13,6 +13,7 @@ import {
   resolveTraceEventServerTime,
   toCandidateTrendRows,
   toClientTimeDescEventItems,
+  toErrorWarningSummary,
   toEventRankItems,
   toMetricItemsFromEvents,
   toMetricTrendRows,
@@ -102,6 +103,66 @@ const createEventItem = (result: string): TraceEventItem => ({
   clientIp: "127.0.0.1",
   userAgent: "vitest",
 });
+
+/** 错误预警测试事件构造参数。 */
+interface CreateWarningEventItemsOptions {
+  /** 统计日期。 */
+  warningDate: string;
+  /** 成功事件数。 */
+  successCount?: number;
+  /** 失败事件数。 */
+  failCount?: number;
+  /** 警告归类事件数。 */
+  warningCount?: number;
+  /** 成功事件候选人 ID 列表。 */
+  successCandidateIds?: number[];
+  /** 失败事件候选人 ID 列表。 */
+  failCandidateIds?: number[];
+}
+
+/** 循环读取候选人 ID。 */
+const resolveCandidateId = (candidateIds: number[] | undefined, index: number, fallbackOffset: number) => {
+  if (!candidateIds?.length) {
+    return fallbackOffset + index;
+  }
+
+  return candidateIds[index % candidateIds.length];
+};
+
+/** 构造错误预警测试事件列表。 */
+const createWarningEventItems = ({
+  warningDate,
+  successCount = 0,
+  failCount = 0,
+  warningCount = 0,
+  successCandidateIds,
+  failCandidateIds,
+}: CreateWarningEventItemsOptions) => {
+  /** 成功事件列表。 */
+  const successEventItems = Array.from({ length: successCount }, (_, eventIndex) => ({
+    ...createEventItem("success"),
+    eventId: `${warningDate}_success_${eventIndex}`,
+    interviewCandidateId: resolveCandidateId(successCandidateIds, eventIndex, 1),
+    serverTime: `${warningDate}T10:${String(eventIndex % 60).padStart(2, "0")}:01`,
+  }));
+  /** 失败事件列表。 */
+  const failEventItems = Array.from({ length: failCount }, (_, eventIndex) => ({
+    ...createEventItem("fail"),
+    eventId: `${warningDate}_fail_${eventIndex}`,
+    interviewCandidateId: resolveCandidateId(failCandidateIds, eventIndex, 10_001),
+    serverTime: `${warningDate}T11:${String(eventIndex % 60).padStart(2, "0")}:01`,
+  }));
+  /** 警告归类事件列表。 */
+  const warningEventItems = Array.from({ length: warningCount }, (_, eventIndex) => ({
+    ...createEventItem("fail"),
+    eventId: `${warningDate}_warning_${eventIndex}`,
+    errorCode: "NO_TOKEN",
+    interviewCandidateId: 20_001 + eventIndex,
+    serverTime: `${warningDate}T12:${String(eventIndex % 60).padStart(2, "0")}:01`,
+  }));
+
+  return [...successEventItems, ...failEventItems, ...warningEventItems];
+};
 
 describe("trace utils", () => {
   it("aggregates metric summary", () => {
@@ -403,6 +464,129 @@ describe("trace utils", () => {
     ]);
     expect(candidateTrendRows[1]).toMatchObject({ metricLabel: "9点", candidateCount: 0 });
     expect(candidateTrendRows[2]).toMatchObject({ metricLabel: "10点", candidateCount: 2 });
+  });
+
+  it("builds error warning summary from fail event rate", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary(
+      createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 90,
+        failCount: 5,
+        warningCount: 5,
+        failCandidateIds: [1],
+      }),
+    );
+
+    expect(warningSummary).toMatchObject({
+      level: "watch",
+      warningDate: "2026-05-20",
+      eventCount: 100,
+      failCount: 5,
+    });
+    expect(warningSummary.failRate).toBe(0.05);
+  });
+
+  it("keeps low sample error warning summary normal", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary(
+      createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 6,
+        failCount: 4,
+        failCandidateIds: [1],
+      }),
+    );
+
+    expect(warningSummary.level).toBe("normal");
+    expect(warningSummary.failRate).toBe(0.4);
+  });
+
+  it("marks error warning summary as warning", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary(
+      createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 190,
+        failCount: 10,
+        successCandidateIds: Array.from({ length: 190 }, (_, index) => index + 1),
+        failCandidateIds: [1],
+      }),
+    );
+
+    expect(warningSummary).toMatchObject({
+      level: "warning",
+      eventCount: 200,
+      failCount: 10,
+      affectedCandidateCount: 1,
+    });
+    expect(warningSummary.failRate).toBe(0.05);
+  });
+
+  it("marks error warning summary as critical by fail rate", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary(
+      createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 90,
+        failCount: 10,
+        successCandidateIds: Array.from({ length: 90 }, (_, index) => index + 1),
+        failCandidateIds: [1],
+      }),
+    );
+
+    expect(warningSummary.level).toBe("critical");
+    expect(warningSummary.failRate).toBe(0.1);
+  });
+
+  it("marks error warning summary as critical by affected candidates", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary(
+      createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 97,
+        failCount: 3,
+        successCandidateIds: Array.from({ length: 50 }, (_, index) => index + 1),
+        failCandidateIds: [1, 2, 3],
+      }),
+    );
+
+    expect(warningSummary).toMatchObject({
+      level: "critical",
+      candidateCount: 50,
+      affectedCandidateCount: 3,
+    });
+    expect(warningSummary.affectedCandidateRate).toBe(0.06);
+  });
+
+  it("returns highest risk date for ranged error warning summary", () => {
+    /** 错误预警摘要。 */
+    const warningSummary = toErrorWarningSummary([
+      ...createWarningEventItems({
+        warningDate: "2026-05-20",
+        successCount: 96,
+        failCount: 4,
+      }),
+      ...createWarningEventItems({
+        warningDate: "2026-05-21",
+        successCount: 190,
+        failCount: 10,
+        successCandidateIds: Array.from({ length: 190 }, (_, index) => index + 1),
+        failCandidateIds: [1],
+      }),
+      ...createWarningEventItems({
+        warningDate: "2026-05-22",
+        successCount: 90,
+        failCount: 10,
+        successCandidateIds: Array.from({ length: 90 }, (_, index) => index + 1),
+        failCandidateIds: [1],
+      }),
+    ]);
+
+    expect(warningSummary).toMatchObject({
+      level: "critical",
+      warningDate: "2026-05-22",
+    });
   });
 
   it("formats trace stage labels", () => {
