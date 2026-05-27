@@ -15,15 +15,29 @@
     <!-- 指标汇总区 -->
     <MetricSummary :summary="metricSummary" />
 
-    <!-- 图表与排行区 -->
+    <!-- 图表与分析区 -->
     <div class="dashboard-page__content">
-      <MetricTrendChart
-        :end-time="appliedEndTime"
-        :loading="isLoading"
-        :metric-items="metricItems"
-        :start-time="appliedStartTime"
-      />
-      <EventRankTable :rank-items="eventRankItems" />
+      <!-- 主图表区 -->
+      <div class="dashboard-page__main-charts">
+        <MetricTrendChart
+          :end-time="appliedEndTime"
+          :loading="isLoading"
+          :metric-items="metricItems"
+          :start-time="appliedStartTime"
+        />
+        <CandidateTrendChart
+          :end-time="appliedEndTime"
+          :event-items="filteredEventItems"
+          :loading="isLoading"
+          :start-time="appliedStartTime"
+        />
+      </div>
+
+      <!-- 右侧分析区 -->
+      <div class="dashboard-page__analysis">
+        <TopErrorEventCodeChart :loading="isLoading" :metric-items="metricItems" />
+        <EventRankTable :rank-items="eventRankItems" />
+      </div>
     </div>
   </section>
 </template>
@@ -32,10 +46,12 @@
 import type { TraceEventItem, TraceFlowQuery, TraceMetricQuery } from "@/api/trace";
 import { queryTraceFlow } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
+import CandidateTrendChart from "@/modules/dashboard/components/CandidateTrendChart.vue";
 import EventRankTable from "@/modules/dashboard/components/EventRankTable.vue";
 import MetricSearchForm from "@/modules/dashboard/components/MetricSearchForm.vue";
 import MetricSummary from "@/modules/dashboard/components/MetricSummary.vue";
 import MetricTrendChart from "@/modules/dashboard/components/MetricTrendChart.vue";
+import TopErrorEventCodeChart from "@/modules/dashboard/components/TopErrorEventCodeChart.vue";
 import { createTodayTraceRange } from "@/utils/date";
 import {
   aggregateMetricSummary,
@@ -146,6 +162,14 @@ tryOnMounted(() => {
 .dashboard-page__content {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(360px, 0.75fr);
+  gap: 16px;
+}
+
+.dashboard-page__main-charts,
+.dashboard-page__analysis {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   gap: 16px;
 }
 

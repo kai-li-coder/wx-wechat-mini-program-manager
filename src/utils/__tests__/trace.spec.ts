@@ -11,10 +11,12 @@ import {
   resolveTraceEventRowKey,
   resolveTraceEventResult,
   resolveTraceEventServerTime,
+  toCandidateTrendRows,
   toClientTimeDescEventItems,
   toEventRankItems,
   toMetricItemsFromEvents,
   toMetricTrendRows,
+  toTopFailEventRankItems,
 } from "@/utils/trace";
 
 /** 构造测试用聚合数据。 */
@@ -242,6 +244,165 @@ describe("trace utils", () => {
       eventCode: "upload_fail",
       eventCount: 5,
     });
+  });
+
+  it("builds top fail event code rank items", () => {
+    /** 失败事件码排行数据。 */
+    const topFailEventRankItems = toTopFailEventRankItems(
+      [
+        ...metricItems,
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "camera_init_fail",
+          result: "fail",
+          eventCount: 8,
+          flowCount: 4,
+          candidateCount: 4,
+        },
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "business_fail",
+          result: "fail",
+          eventCount: 7,
+          flowCount: 4,
+          candidateCount: 4,
+        },
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "submit_fail",
+          result: "fail",
+          eventCount: 6,
+          flowCount: 4,
+          candidateCount: 4,
+        },
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "oss_upload_fail",
+          result: "fail",
+          eventCount: 5,
+          flowCount: 4,
+          candidateCount: 4,
+        },
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "guide_page_load_fail",
+          result: "fail",
+          eventCount: 4,
+          flowCount: 4,
+          candidateCount: 4,
+        },
+        {
+          metricHour: "2026-05-20 12:00:00",
+          eventCode: "end_page_load_fail",
+          result: "fail",
+          eventCount: 3,
+          flowCount: 3,
+          candidateCount: 3,
+        },
+      ],
+      5,
+    );
+
+    expect(topFailEventRankItems).toHaveLength(5);
+    expect(topFailEventRankItems.map((rankItem) => rankItem.eventCode)).toEqual([
+      "camera_init_fail",
+      "business_fail",
+      "submit_fail",
+      "oss_upload_fail",
+      "guide_page_load_fail",
+    ]);
+    expect(topFailEventRankItems.some((rankItem) => rankItem.eventCode === "record_stop_timeout")).toBe(false);
+  });
+
+  it("deduplicates candidate trend rows by time bucket", () => {
+    /** 候选人趋势事件列表。 */
+    const candidateTrendEventItems: TraceEventItem[] = [
+      {
+        ...createEventItem("success"),
+        eventId: "evt_candidate_1_first",
+        interviewCandidateId: 1001,
+        serverTime: "2026-05-20T10:05:01",
+      },
+      {
+        ...createEventItem("fail"),
+        eventId: "evt_candidate_1_second",
+        interviewCandidateId: 1001,
+        serverTime: "2026-05-20T10:35:01",
+      },
+      {
+        ...createEventItem("success"),
+        eventId: "evt_candidate_2",
+        interviewCandidateId: 1002,
+        serverTime: "2026-05-20T10:45:01",
+      },
+      {
+        ...createEventItem("success"),
+        eventId: "evt_candidate_null",
+        interviewCandidateId: null,
+        serverTime: "2026-05-20T10:55:01",
+      },
+      {
+        ...createEventItem("success"),
+        eventId: "evt_candidate_1_next_hour",
+        interviewCandidateId: 1001,
+        serverTime: "2026-05-20T11:05:01",
+      },
+    ];
+
+    expect(toCandidateTrendRows(candidateTrendEventItems)).toEqual([
+      {
+        metricHour: "2026-05-20 10:00:00",
+        candidateCount: 2,
+      },
+      {
+        metricHour: "2026-05-20 11:00:00",
+        candidateCount: 1,
+      },
+    ]);
+  });
+
+  it("fills ranged candidate trend rows with empty buckets", () => {
+    /** 候选人趋势行。 */
+    const candidateTrendRows = toCandidateTrendRows(
+      [
+        {
+          ...createEventItem("success"),
+          eventId: "evt_candidate_1",
+          interviewCandidateId: 1001,
+          serverTime: "2026-05-20T10:05:01",
+        },
+        {
+          ...createEventItem("success"),
+          eventId: "evt_candidate_2",
+          interviewCandidateId: 1002,
+          serverTime: "2026-05-20T10:35:01",
+        },
+      ],
+      {
+        startTime: "2026-05-20 08:00:00",
+        endTime: "2026-05-20 22:59:59",
+      },
+    );
+
+    expect(candidateTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
+      "8点",
+      "9点",
+      "10点",
+      "11点",
+      "12点",
+      "13点",
+      "14点",
+      "15点",
+      "16点",
+      "17点",
+      "18点",
+      "19点",
+      "20点",
+      "21点",
+      "22点",
+    ]);
+    expect(candidateTrendRows[1]).toMatchObject({ metricLabel: "9点", candidateCount: 0 });
+    expect(candidateTrendRows[2]).toMatchObject({ metricLabel: "10点", candidateCount: 2 });
   });
 
   it("formats trace stage labels", () => {

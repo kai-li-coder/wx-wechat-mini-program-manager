@@ -28,6 +28,16 @@ export interface TraceTrendRow {
   successCount: number;
 }
 
+/** 候选人趋势图聚合项。 */
+export interface TraceCandidateTrendRow {
+  /** 小时粒度时间。 */
+  metricHour: string;
+  /** 趋势图展示标签。 */
+  metricLabel?: string;
+  /** 去重候选人数。 */
+  candidateCount: number;
+}
+
 /** 趋势图聚合粒度。 */
 type TraceTrendGranularity = "month" | "day" | "hour";
 
@@ -66,6 +76,14 @@ interface TraceMetricBuildItem {
   /** 涉及链路集合。 */
   flowIdSet: Set<string>;
   /** 涉及候选人集合。 */
+  candidateIdSet: Set<number>;
+}
+
+/** 候选人趋势构建中间项。 */
+interface TraceCandidateTrendBuildItem {
+  /** 候选人趋势项。 */
+  candidateTrendRow: TraceCandidateTrendRow;
+  /** 当前时间桶去重候选人集合。 */
   candidateIdSet: Set<number>;
 }
 
@@ -519,6 +537,115 @@ export const toMetricTrendRows = (
   );
 };
 
+/** 创建候选人趋势构建中间项。 */
+const createCandidateTrendBuildItem = (metricHour: string, metricLabel?: string): TraceCandidateTrendBuildItem => {
+  /** 候选人趋势行。 */
+  const candidateTrendRow: TraceCandidateTrendRow = {
+    metricHour,
+    candidateCount: 0,
+  };
+
+  if (metricLabel) {
+    candidateTrendRow.metricLabel = metricLabel;
+  }
+
+  return {
+    candidateTrendRow,
+    candidateIdSet: new Set<number>(),
+  };
+};
+
+/** 追加候选人趋势桶去重候选人。 */
+const appendCandidateTrendCandidate = (
+  candidateTrendBuildItem: TraceCandidateTrendBuildItem,
+  interviewCandidateId: number,
+) => {
+  candidateTrendBuildItem.candidateIdSet.add(interviewCandidateId);
+  candidateTrendBuildItem.candidateTrendRow.candidateCount = candidateTrendBuildItem.candidateIdSet.size;
+};
+
+/** 按指定时间范围转换候选人趋势行。 */
+const toRangedCandidateTrendRows = (
+  eventItems: TraceEventItem[],
+  startDateTime: dayjs.Dayjs,
+  endDateTime: dayjs.Dayjs,
+) => {
+  /** 趋势图聚合粒度。 */
+  const granularity = resolveTrendGranularity(startDateTime, endDateTime);
+  /** 坐标轴项列表。 */
+  const trendAxisItems = createTrendAxisItems(startDateTime, endDateTime, granularity);
+  /** 按坐标轴聚合后的候选人趋势数据。 */
+  const candidateTrendBuildItemMap = new Map<string, TraceCandidateTrendBuildItem>(
+    trendAxisItems.map((axisItem) => [
+      axisItem.metricHour,
+      createCandidateTrendBuildItem(axisItem.metricHour, axisItem.metricLabel),
+    ]),
+  );
+
+  eventItems.forEach((eventItem) => {
+    if (eventItem.interviewCandidateId === null) {
+      return;
+    }
+
+    /** 服务端记录时间对象。 */
+    const metricDateTime = dayjs(resolveTraceEventServerTime(eventItem));
+    if (!metricDateTime.isValid()) {
+      return;
+    }
+
+    /** 坐标轴聚合键。 */
+    const trendBucketKey = formatTrendBucketKey(metricDateTime, granularity);
+    /** 候选人趋势中间项。 */
+    const candidateTrendBuildItem = candidateTrendBuildItemMap.get(trendBucketKey);
+    if (!candidateTrendBuildItem) {
+      return;
+    }
+
+    appendCandidateTrendCandidate(candidateTrendBuildItem, eventItem.interviewCandidateId);
+  });
+
+  return [...candidateTrendBuildItemMap.values()].map(
+    (candidateTrendBuildItem) => candidateTrendBuildItem.candidateTrendRow,
+  );
+};
+
+/** 将链路事件明细转换为候选人趋势行。 */
+export const toCandidateTrendRows = (
+  eventItems: TraceEventItem[],
+  options?: TraceTrendBuildOptions,
+): TraceCandidateTrendRow[] => {
+  /** 趋势图时间范围。 */
+  const trendDateRange = resolveTrendDateRange(options);
+  if (trendDateRange) {
+    return toRangedCandidateTrendRows(eventItems, trendDateRange.startDateTime, trendDateRange.endDateTime);
+  }
+
+  /** 按小时分组后的候选人趋势数据。 */
+  const candidateTrendBuildItemMap = new Map<string, TraceCandidateTrendBuildItem>();
+
+  eventItems.forEach((eventItem) => {
+    if (eventItem.interviewCandidateId === null) {
+      return;
+    }
+
+    /** 小时聚合时间。 */
+    const metricHour = toMetricHour(eventItem);
+    if (!metricHour) {
+      return;
+    }
+
+    /** 候选人趋势中间项。 */
+    const candidateTrendBuildItem =
+      candidateTrendBuildItemMap.get(metricHour) ?? createCandidateTrendBuildItem(metricHour);
+    appendCandidateTrendCandidate(candidateTrendBuildItem, eventItem.interviewCandidateId);
+    candidateTrendBuildItemMap.set(metricHour, candidateTrendBuildItem);
+  });
+
+  return [...candidateTrendBuildItemMap.values()]
+    .map((candidateTrendBuildItem) => candidateTrendBuildItem.candidateTrendRow)
+    .sort((leftRow, rightRow) => leftRow.metricHour.localeCompare(rightRow.metricHour));
+};
+
 /** 汇总事件码排行。 */
 export const toEventRankItems = (metricItems: TraceMetricItem[]): TraceEventRankItem[] => {
   /** 按事件码聚合后的排行数据。 */
@@ -542,6 +669,10 @@ export const toEventRankItems = (metricItems: TraceMetricItem[]): TraceEventRank
     (leftItem, rightItem) => rightItem.eventCount - leftItem.eventCount,
   );
 };
+
+/** 汇总失败事件码排行 Top N。 */
+export const toTopFailEventRankItems = (metricItems: TraceMetricItem[], limit = 5): TraceEventRankItem[] =>
+  toEventRankItems(metricItems.filter((metricItem) => metricItem.result === "fail")).slice(0, limit);
 
 /** 筛选错误日志事件。 */
 export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: string) =>
