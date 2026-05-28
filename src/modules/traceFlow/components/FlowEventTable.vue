@@ -4,6 +4,8 @@
   <el-card class="table-card" shadow="never">
     <!-- 事件明细表格 -->
     <el-table v-loading="loading" :data="eventItems" empty-text="暂无链路事件" :row-key="resolveTraceEventRowKey">
+      <!-- 序号列 -->
+      <el-table-column :index="resolveTableRowIndex" align="center" label="序号" type="index" width="80" />
       <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 客户端时间 -->
@@ -92,6 +94,9 @@ const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
   /** 总记录数。 */
   total: number;
 }>();
+
+/** 计算分页后的表格序号。 */
+const resolveTableRowIndex = (rowIndex: number) => (pageNum - 1) * pageSize + rowIndex + 1;
 
 const emit = defineEmits<{
   /** 查看事件详情。 */
