@@ -11,6 +11,8 @@
       v-model:result-filter="resultFilter"
       v-model:device-quick-filter="deviceQuickFilter"
       v-model:brand-quick-filter="brandQuickFilter"
+      v-model:brand-tags="brandFilterTags"
+      v-model:model-tags="modelFilterTags"
       v-model:exclude-test-records="isExcludeTestRecords"
       :loading="isLoading"
       @reset="handleReset"
@@ -60,11 +62,15 @@ const createDefaultFlowQuery = (): TraceFlowQuery => ({
 /** 链路查询表单。 */
 const flowQueryForm = ref<TraceFlowQuery>(createDefaultFlowQuery());
 /** 异常结果筛选。 */
-const resultFilter = ref("");
+const resultFilter = ref("fail");
 /** 设备类型快捷筛选。 */
 const deviceQuickFilter = ref<TraceDeviceQuickFilter>("");
 /** 品牌快捷筛选。 */
 const brandQuickFilter = ref<TraceBrandQuickFilter>("");
+/** 品牌标签筛选。 */
+const brandFilterTags = ref<string[]>([]);
+/** 机型标签筛选。 */
+const modelFilterTags = ref<string[]>([]);
 /** 是否过滤测试记录。 */
 const isExcludeTestRecords = ref(true);
 /** 原始链路事件列表。 */
@@ -105,6 +111,8 @@ const handleReset = () => {
   resultFilter.value = "";
   deviceQuickFilter.value = "";
   brandQuickFilter.value = "";
+  brandFilterTags.value = [];
+  modelFilterTags.value = [];
   isExcludeTestRecords.value = false;
   eventItems.value = [];
 };

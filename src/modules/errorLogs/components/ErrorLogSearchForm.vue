@@ -32,41 +32,29 @@
       </el-form-item>
 
       <!-- 品牌筛选 -->
-      <el-form-item class="query-form__field-with-shortcuts" label="品牌">
-        <div class="query-form__shortcut-field">
-          <!-- 品牌输入框 -->
-          <el-input v-model.trim="queryForm.brand" clearable placeholder="请输入品牌" />
-
-          <!-- 品牌快捷查询 -->
-          <el-radio-group v-model="brandQuickFilter" class="query-form__shortcut-group" size="small">
-            <el-radio-button
-              v-for="brandQuickOption in errorBrandQuickFilterOptions"
-              :key="brandQuickOption.value"
-              :value="brandQuickOption.value"
-            >
-              {{ brandQuickOption.label }}
-            </el-radio-button>
-          </el-radio-group>
-        </div>
+      <el-form-item label="品牌">
+        <!-- 品牌标签输入框 -->
+        <el-input-tag
+          v-model="brandFilterTags"
+          class="query-form__tag-input"
+          clearable
+          :delimiter="traceErrorTagDelimiter"
+          placeholder="请输入品牌或 iPhone/非 iPhone"
+          tag-effect="plain"
+        />
       </el-form-item>
 
       <!-- 机型筛选 -->
-      <el-form-item class="query-form__field-with-shortcuts" label="机型">
-        <div class="query-form__shortcut-field">
-          <!-- 机型输入框 -->
-          <el-input v-model.trim="queryForm.model" clearable placeholder="请输入机型" />
-
-          <!-- 机型快捷查询 -->
-          <el-radio-group v-model="deviceQuickFilter" class="query-form__shortcut-group" size="small">
-            <el-radio-button
-              v-for="deviceQuickOption in errorDeviceQuickFilterOptions"
-              :key="deviceQuickOption.value"
-              :value="deviceQuickOption.value"
-            >
-              {{ deviceQuickOption.label }}
-            </el-radio-button>
-          </el-radio-group>
-        </div>
+      <el-form-item label="机型">
+        <!-- 机型标签输入框 -->
+        <el-input-tag
+          v-model="modelFilterTags"
+          class="query-form__tag-input"
+          clearable
+          :delimiter="traceErrorTagDelimiter"
+          placeholder="请输入机型或 iOS设备/Android设备"
+          tag-effect="plain"
+        />
       </el-form-item>
 
       <!-- 服务端时间范围筛选 -->
@@ -112,11 +100,14 @@
 import type { TraceFlowQuery } from "@/api/trace";
 import type { TraceBrandQuickFilter, TraceDeviceQuickFilter } from "@/utils/trace";
 import { useTraceOptions } from "@/modules/trace/composables/useTraceOptions";
+import { normalizeTraceErrorBrandTags, normalizeTraceErrorDeviceTags } from "@/utils/trace";
 
 const queryForm = defineModel<TraceFlowQuery>("query", { required: true });
 const resultFilter = defineModel<string>("resultFilter", { required: true });
 const deviceQuickFilter = defineModel<TraceDeviceQuickFilter>("deviceQuickFilter", { required: true });
 const brandQuickFilter = defineModel<TraceBrandQuickFilter>("brandQuickFilter", { required: true });
+const brandTags = defineModel<string[]>("brandTags", { required: true });
+const modelTags = defineModel<string[]>("modelTags", { required: true });
 const isExcludeTestRecords = defineModel<boolean>("excludeTestRecords", { required: true });
 
 const { loading = false } = defineProps<{
@@ -132,8 +123,34 @@ const emit = defineEmits<{
 }>();
 
 /** 错误日志筛选选项。 */
-const { errorBrandQuickFilterOptions, errorDeviceQuickFilterOptions, errorResultOptions, eventCodeOptions } =
-  useTraceOptions();
+const { errorResultOptions, eventCodeOptions } = useTraceOptions();
+
+/** 错误日志标签分隔符。 */
+const traceErrorTagDelimiter = /[,，]/;
+
+/** 品牌筛选标签。 */
+const brandFilterTags = computed<string[]>({
+  get: () => brandTags.value,
+  set: (selectedBrandTags) => {
+    /** 规范化后的品牌标签筛选。 */
+    const normalizedBrandFilter = normalizeTraceErrorBrandTags(selectedBrandTags);
+    brandTags.value = normalizedBrandFilter.tags;
+    queryForm.value.brand = normalizedBrandFilter.brand;
+    brandQuickFilter.value = normalizedBrandFilter.brandQuickFilter;
+  },
+});
+
+/** 机型筛选标签。 */
+const modelFilterTags = computed<string[]>({
+  get: () => modelTags.value,
+  set: (selectedModelTags) => {
+    /** 规范化后的机型标签筛选。 */
+    const normalizedDeviceFilter = normalizeTraceErrorDeviceTags(selectedModelTags);
+    modelTags.value = normalizedDeviceFilter.tags;
+    queryForm.value.model = normalizedDeviceFilter.model;
+    deviceQuickFilter.value = normalizedDeviceFilter.deviceQuickFilter;
+  },
+});
 
 /** 服务端时间范围选择值。 */
 const serverTimeRange = computed<string[] | null>({
@@ -158,16 +175,7 @@ const serverTimeRange = computed<string[] | null>({
 </script>
 
 <style scoped lang="scss">
-.query-form__shortcut-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.query-form__tag-input {
   width: 100%;
-}
-
-.query-form__shortcut-group {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 4px;
 }
 </style>

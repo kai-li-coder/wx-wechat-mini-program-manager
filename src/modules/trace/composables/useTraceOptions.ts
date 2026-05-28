@@ -56,7 +56,7 @@ const errorResultOptions = [
 /** 错误日志机型快捷查询选项。 */
 const errorDeviceQuickFilterOptions: Array<{ label: string; value: TraceDeviceQuickFilter }> = [
   { label: "全部机型", value: "" },
-  { label: "IOS设备", value: "ios" },
+  { label: "iOS设备", value: "ios" },
   { label: "Android设备", value: "android" },
 ];
 

@@ -32,7 +32,7 @@ describe("useTraceOptions", () => {
 
     expect(errorDeviceQuickFilterOptions.map((deviceQuickOption) => deviceQuickOption.label)).toEqual([
       "全部机型",
-      "IOS设备",
+      "iOS设备",
       "Android设备",
     ]);
     expect(errorBrandQuickFilterOptions.map((brandQuickOption) => brandQuickOption.label)).toEqual([

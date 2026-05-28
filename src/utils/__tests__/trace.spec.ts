@@ -8,6 +8,8 @@ import {
   formatTraceEventCode,
   formatTraceStage,
   formatTraceTerminalModel,
+  normalizeTraceErrorBrandTags,
+  normalizeTraceErrorDeviceTags,
   resolveTraceEventRowKey,
   resolveTraceEventResult,
   resolveTraceEventServerTime,
@@ -628,6 +630,42 @@ describe("trace utils", () => {
     expect(formatTraceTerminalModel({ brand: "Apple", model: "iPhone 15 Pro" })).toBe("Apple-iPhone 15 Pro");
     expect(formatTraceTerminalModel('{"brand":"Xiaomi","model":"14"}')).toBe("Xiaomi-14");
     expect(formatTraceTerminalModel({ brand: "", model: "" })).toBe("-");
+  });
+
+  it("normalizes error log brand tags into query and quick filters", () => {
+    expect(normalizeTraceErrorBrandTags([" Apple ", " iPhone "])).toEqual({
+      tags: ["Apple", "iPhone"],
+      brand: "Apple",
+      brandQuickFilter: "iphone",
+    });
+    expect(normalizeTraceErrorBrandTags(["iPhone", "非iphone"])).toEqual({
+      tags: ["非 iPhone"],
+      brand: "",
+      brandQuickFilter: "nonIphone",
+    });
+    expect(normalizeTraceErrorBrandTags(["Apple", " apple ", "", " Xiaomi "])).toEqual({
+      tags: ["Xiaomi"],
+      brand: "Xiaomi",
+      brandQuickFilter: "",
+    });
+  });
+
+  it("normalizes error log device tags into query and quick filters", () => {
+    expect(normalizeTraceErrorDeviceTags([" iOS设备 ", " iPhone 15 Pro ", "ANDROID设备"])).toEqual({
+      tags: ["iPhone 15 Pro", "Android设备"],
+      model: "iPhone 15 Pro",
+      deviceQuickFilter: "android",
+    });
+    expect(normalizeTraceErrorDeviceTags(["devtools", " DevTools "])).toEqual({
+      tags: ["DevTools"],
+      model: "DevTools",
+      deviceQuickFilter: "",
+    });
+    expect(normalizeTraceErrorDeviceTags(["ios", "android 设备"])).toEqual({
+      tags: ["Android设备"],
+      model: "",
+      deviceQuickFilter: "android",
+    });
   });
 
   it("filters only error events", () => {

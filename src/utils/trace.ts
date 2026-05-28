@@ -23,6 +23,26 @@ export type TraceDeviceQuickFilter = "" | "ios" | "android";
 /** 错误日志品牌快捷筛选值。 */
 export type TraceBrandQuickFilter = "" | "iphone" | "nonIphone";
 
+/** 错误日志品牌标签筛选结果。 */
+export interface TraceErrorBrandTagFilter {
+  /** 规范化后的品牌标签。 */
+  tags: string[];
+  /** 后端品牌查询值。 */
+  brand: string;
+  /** 品牌快捷筛选。 */
+  brandQuickFilter: TraceBrandQuickFilter;
+}
+
+/** 错误日志机型标签筛选结果。 */
+export interface TraceErrorDeviceTagFilter {
+  /** 规范化后的机型标签。 */
+  tags: string[];
+  /** 后端机型查询值。 */
+  model: string;
+  /** 设备类型快捷筛选。 */
+  deviceQuickFilter: TraceDeviceQuickFilter;
+}
+
 /** 错误日志本地筛选条件。 */
 export interface TraceErrorEventFilterOptions {
   /** 异常结果筛选。 */
@@ -143,6 +163,42 @@ interface TraceErrorWarningBuildItem {
   /** 受影响候选人集合。 */
   affectedCandidateIdSet: Set<number>;
 }
+
+/** 错误日志品牌快捷标签值。 */
+type TraceBrandQuickTagValue = Exclude<TraceBrandQuickFilter, "">;
+
+/** 错误日志机型快捷标签值。 */
+type TraceDeviceQuickTagValue = Exclude<TraceDeviceQuickFilter, "">;
+
+/** 错误日志快捷标签选项。 */
+interface TraceErrorQuickTagOption<TQuickValue extends string> {
+  /** 标签展示文本。 */
+  label: string;
+  /** 快捷筛选值。 */
+  value: TQuickValue;
+  /** 可识别的别名。 */
+  aliases: string[];
+}
+
+/** 错误日志标签构建项。 */
+interface TraceErrorTagBuildItem {
+  /** 标签展示文本。 */
+  tag: string;
+  /** 标签原始顺序。 */
+  index: number;
+}
+
+/** 品牌快捷标签选项。 */
+const traceErrorBrandQuickTagOptions: Array<TraceErrorQuickTagOption<TraceBrandQuickTagValue>> = [
+  { label: "iPhone", value: "iphone", aliases: [] },
+  { label: "非 iPhone", value: "nonIphone", aliases: ["非iphone"] },
+];
+
+/** 机型快捷标签选项。 */
+const traceErrorDeviceQuickTagOptions: Array<TraceErrorQuickTagOption<TraceDeviceQuickTagValue>> = [
+  { label: "iOS设备", value: "ios", aliases: ["ios", "ios 设备"] },
+  { label: "Android设备", value: "android", aliases: ["android", "android 设备"] },
+];
 
 /** 阶段中文文案字典。 */
 const traceStageLabelMap = new Map<string, string>([
@@ -406,6 +462,124 @@ export const formatTraceTerminalModel = (deviceInfo: unknown) => {
   const terminalModel = `${brand}-${model}`;
 
   return terminalModel || "-";
+};
+
+/** 规范化错误日志标签文本。 */
+const normalizeTraceErrorTagText = (tag: unknown) => String(tag ?? "").trim();
+
+/** 解析错误日志标签去重键。 */
+const resolveTraceErrorTagUniqueKey = (tag: string) => tag.toLowerCase();
+
+/** 解析错误日志快捷标签匹配键。 */
+const resolveTraceErrorQuickTagKey = (tag: string) => resolveTraceErrorTagUniqueKey(tag).replace(/\s+/g, "");
+
+/** 规范化错误日志标签列表。 */
+const normalizeTraceErrorTags = (filterTags?: string[]) =>
+  (filterTags ?? []).reduce<string[]>((normalizedTags, rawTag) => {
+    /** 清理后的标签文本。 */
+    const normalizedTag = normalizeTraceErrorTagText(rawTag);
+    if (!normalizedTag) {
+      return normalizedTags;
+    }
+
+    /** 重复标签下标。 */
+    const duplicatedTagIndex = normalizedTags.findIndex(
+      (tag) => resolveTraceErrorTagUniqueKey(tag) === resolveTraceErrorTagUniqueKey(normalizedTag),
+    );
+    if (duplicatedTagIndex >= 0) {
+      normalizedTags.splice(duplicatedTagIndex, 1);
+    }
+
+    normalizedTags.push(normalizedTag);
+    return normalizedTags;
+  }, []);
+
+/** 获取错误日志快捷标签选项。 */
+const resolveTraceErrorQuickTagOption = <TQuickValue extends string>(
+  tag: string,
+  quickTagOptions: Array<TraceErrorQuickTagOption<TQuickValue>>,
+) => {
+  /** 快捷标签匹配键。 */
+  const quickTagKey = resolveTraceErrorQuickTagKey(tag);
+
+  return quickTagOptions.find((quickTagOption) =>
+    [quickTagOption.label, ...quickTagOption.aliases].some(
+      (alias) => resolveTraceErrorQuickTagKey(alias) === quickTagKey,
+    ),
+  );
+};
+
+/** 按原始顺序输出错误日志标签。 */
+const toTraceErrorFilterTags = (tagItems: Array<TraceErrorTagBuildItem | null>) =>
+  tagItems
+    .filter((tagItem): tagItem is TraceErrorTagBuildItem => Boolean(tagItem))
+    .sort((leftTagItem, rightTagItem) => leftTagItem.index - rightTagItem.index)
+    .map((tagItem) => tagItem.tag);
+
+/** 规范化错误日志品牌标签筛选。 */
+export const normalizeTraceErrorBrandTags = (filterTags?: string[]): TraceErrorBrandTagFilter => {
+  /** 规范化后的输入标签。 */
+  const normalizedTags = normalizeTraceErrorTags(filterTags);
+  /** 后端品牌查询值。 */
+  let brand = "";
+  /** 品牌快捷筛选值。 */
+  let brandQuickFilter: TraceBrandQuickFilter = "";
+  /** 普通品牌标签。 */
+  let brandTagItem: TraceErrorTagBuildItem | null = null;
+  /** 品牌快捷标签。 */
+  let brandQuickTagItem: TraceErrorTagBuildItem | null = null;
+
+  normalizedTags.forEach((tag, index) => {
+    /** 命中的品牌快捷标签。 */
+    const brandQuickTagOption = resolveTraceErrorQuickTagOption(tag, traceErrorBrandQuickTagOptions);
+    if (brandQuickTagOption) {
+      brandQuickFilter = brandQuickTagOption.value;
+      brandQuickTagItem = { tag: brandQuickTagOption.label, index };
+      return;
+    }
+
+    brand = tag;
+    brandTagItem = { tag, index };
+  });
+
+  return {
+    tags: toTraceErrorFilterTags([brandTagItem, brandQuickTagItem]),
+    brand,
+    brandQuickFilter,
+  };
+};
+
+/** 规范化错误日志机型标签筛选。 */
+export const normalizeTraceErrorDeviceTags = (filterTags?: string[]): TraceErrorDeviceTagFilter => {
+  /** 规范化后的输入标签。 */
+  const normalizedTags = normalizeTraceErrorTags(filterTags);
+  /** 后端机型查询值。 */
+  let model = "";
+  /** 设备类型快捷筛选值。 */
+  let deviceQuickFilter: TraceDeviceQuickFilter = "";
+  /** 普通机型标签。 */
+  let modelTagItem: TraceErrorTagBuildItem | null = null;
+  /** 设备快捷标签。 */
+  let deviceQuickTagItem: TraceErrorTagBuildItem | null = null;
+
+  normalizedTags.forEach((tag, index) => {
+    /** 命中的设备快捷标签。 */
+    const deviceQuickTagOption = resolveTraceErrorQuickTagOption(tag, traceErrorDeviceQuickTagOptions);
+    if (deviceQuickTagOption) {
+      deviceQuickFilter = deviceQuickTagOption.value;
+      deviceQuickTagItem = { tag: deviceQuickTagOption.label, index };
+      return;
+    }
+
+    model = tag;
+    modelTagItem = { tag, index };
+  });
+
+  return {
+    tags: toTraceErrorFilterTags([modelTagItem, deviceQuickTagItem]),
+    model,
+    deviceQuickFilter,
+  };
 };
 
 /** 统计埋点聚合摘要。 */
