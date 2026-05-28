@@ -45,6 +45,12 @@ export interface TraceMetricItem {
 export interface TraceDashboardSummary {
   /** 事件总数。 */
   eventCount: number;
+  /** 成功事件数，后端未返回时由前端从趋势行汇总。 */
+  successCount?: number;
+  /** 失败事件数，后端未返回时由前端从趋势行汇总。 */
+  failCount?: number;
+  /** 警告事件数，后端未返回时由前端从趋势行汇总。 */
+  warningCount?: number;
   /** 去重后的链路数。 */
   flowCount: number;
   /** 去重后的候选人数。 */

@@ -13,7 +13,7 @@
     <MetricSearchForm v-model="dashboardQueryForm" :loading="isLoading" @reset="handleReset" @search="handleSearch" />
 
     <!-- 指标汇总区 -->
-    <MetricSummary :summary="dashboardData.summary" />
+    <MetricSummary :summary="dashboardSummary" />
 
     <!-- 图表与分析区 -->
     <div class="dashboard-page__content">
@@ -67,6 +67,9 @@ const createDefaultDashboardQuery = (): TraceDashboardQuery => ({
 const createEmptyDashboardData = (): TraceDashboardResponse => ({
   summary: {
     eventCount: 0,
+    successCount: 0,
+    failCount: 0,
+    warningCount: 0,
     flowCount: 0,
     candidateCount: 0,
   },
@@ -99,6 +102,30 @@ const dashboardQueryForm = ref<TraceDashboardQuery>(createDefaultDashboardQuery(
 const dashboardData = ref<TraceDashboardResponse>(createEmptyDashboardData());
 /** 页面加载状态。 */
 const isLoading = ref(false);
+
+/** 总览结果摘要，兼容后端未直接返回分类数量的情况。 */
+const dashboardSummary = computed(() => {
+  /** 从趋势行汇总的分类数量。 */
+  const trendSummary = dashboardData.value.trend.rows.reduce(
+    (currentSummary, trendRow) => ({
+      successCount: currentSummary.successCount + trendRow.successCount,
+      failCount: currentSummary.failCount + trendRow.failCount,
+      warningCount: currentSummary.warningCount + trendRow.warningCount,
+    }),
+    {
+      successCount: 0,
+      failCount: 0,
+      warningCount: 0,
+    },
+  );
+
+  return {
+    ...dashboardData.value.summary,
+    successCount: dashboardData.value.summary.successCount ?? trendSummary.successCount,
+    failCount: dashboardData.value.summary.failCount ?? trendSummary.failCount,
+    warningCount: dashboardData.value.summary.warningCount ?? trendSummary.warningCount,
+  };
+});
 
 /** 查询聚合数据。 */
 const handleSearch = async () => {
