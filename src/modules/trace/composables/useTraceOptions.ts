@@ -1,6 +1,7 @@
 // 埋点查询选项配置。
 import dayjs from "dayjs";
 
+import type { TraceBrandQuickFilter, TraceDeviceQuickFilter } from "@/utils/trace";
 import { formatTraceEventCode, formatTraceStage, traceEventCodes, traceStageCodes } from "@/utils/trace";
 
 /** 日期范围快捷项。 */
@@ -50,6 +51,20 @@ const errorResultOptions = [
   { label: "全部异常", value: "" },
   { label: "失败", value: "fail" },
   { label: "警告", value: "warning" },
+];
+
+/** 错误日志机型快捷查询选项。 */
+const errorDeviceQuickFilterOptions: Array<{ label: string; value: TraceDeviceQuickFilter }> = [
+  { label: "全部机型", value: "" },
+  { label: "IOS设备", value: "ios" },
+  { label: "Android设备", value: "android" },
+];
+
+/** 错误日志品牌快捷查询选项。 */
+const errorBrandQuickFilterOptions: Array<{ label: string; value: TraceBrandQuickFilter }> = [
+  { label: "全部品牌", value: "" },
+  { label: "iPhone", value: "iphone" },
+  { label: "非iPhone", value: "nonIphone" },
 ];
 
 /** 埋点总览日期范围快捷项。 */
@@ -102,6 +117,8 @@ const stageOptions = traceStageCodes.map((stage) => ({
 export const useTraceOptions = () => ({
   resultOptions,
   errorResultOptions,
+  errorDeviceQuickFilterOptions,
+  errorBrandQuickFilterOptions,
   eventCodeOptions,
   stageOptions,
   dashboardDateRangeShortcuts,

@@ -25,4 +25,20 @@ describe("useTraceOptions", () => {
       "本日",
     ]);
   });
+
+  it("builds error log quick filter options", () => {
+    /** 埋点查询选项。 */
+    const { errorBrandQuickFilterOptions, errorDeviceQuickFilterOptions } = useTraceOptions();
+
+    expect(errorDeviceQuickFilterOptions.map((deviceQuickOption) => deviceQuickOption.label)).toEqual([
+      "全部机型",
+      "IOS设备",
+      "Android设备",
+    ]);
+    expect(errorBrandQuickFilterOptions.map((brandQuickOption) => brandQuickOption.label)).toEqual([
+      "全部品牌",
+      "iPhone",
+      "非iPhone",
+    ]);
+  });
 });

@@ -17,6 +17,24 @@ export interface TraceMetricSummary {
 /** 错误预警等级。 */
 export type TraceErrorWarningLevel = "normal" | "watch" | "warning" | "critical";
 
+/** 错误日志设备类型快捷筛选值。 */
+export type TraceDeviceQuickFilter = "" | "ios" | "android";
+
+/** 错误日志品牌快捷筛选值。 */
+export type TraceBrandQuickFilter = "" | "iphone" | "nonIphone";
+
+/** 错误日志本地筛选条件。 */
+export interface TraceErrorEventFilterOptions {
+  /** 异常结果筛选。 */
+  resultFilter?: string;
+  /** 设备类型快捷筛选。 */
+  deviceQuickFilter?: TraceDeviceQuickFilter;
+  /** 品牌快捷筛选。 */
+  brandQuickFilter?: TraceBrandQuickFilter;
+  /** 是否过滤开发工具测试记录。 */
+  isExcludeTestRecords?: boolean;
+}
+
 /** 错误预警摘要。 */
 export interface TraceErrorWarningSummary {
   /** 预警等级。 */
@@ -244,6 +262,47 @@ const resolveTraceDeviceInfo = (deviceInfo: unknown): Record<string, unknown> | 
 
 /** 格式化设备字段展示值。 */
 const formatTraceDeviceField = (fieldValue: unknown) => String(fieldValue ?? "").trim();
+
+/** 格式化设备字段匹配值。 */
+const formatTraceDeviceMatchField = (fieldValue: unknown) => formatTraceDeviceField(fieldValue).toLowerCase();
+
+/** 获取设备字段匹配文本。 */
+const resolveTraceDeviceMatchFields = (deviceInfo: unknown) => {
+  /** 解析后的设备信息。 */
+  const resolvedDeviceInfo = resolveTraceDeviceInfo(deviceInfo);
+  if (!resolvedDeviceInfo) {
+    return {
+      brand: "",
+      model: "",
+      osName: "",
+      platform: "",
+      system: "",
+      terminalModel: "",
+    };
+  }
+
+  /** 终端品牌。 */
+  const brand = formatTraceDeviceMatchField(resolvedDeviceInfo.brand);
+  /** 终端型号。 */
+  const model = formatTraceDeviceMatchField(resolvedDeviceInfo.model);
+  /** 操作系统名称。 */
+  const osName = formatTraceDeviceMatchField(resolvedDeviceInfo.osName);
+  /** 运行平台。 */
+  const platform = formatTraceDeviceMatchField(resolvedDeviceInfo.platform);
+  /** 系统版本信息。 */
+  const system = formatTraceDeviceMatchField(resolvedDeviceInfo.system);
+  /** 表格展示的终端型号匹配文本。 */
+  const terminalModel = `${brand}-${model}`;
+
+  return {
+    brand,
+    model,
+    osName,
+    platform,
+    system,
+    terminalModel,
+  };
+};
 
 /** 格式化链路事件阶段，展示中文文案与原始阶段编码。 */
 export const formatTraceStage = (stage?: string) => {
@@ -949,9 +1008,95 @@ export const toErrorWarningSummary = (
   return errorWarningSummaries[0] ?? createEmptyErrorWarningSummary(options);
 };
 
+/** 解析错误日志筛选参数。 */
+const resolveTraceErrorEventFilterOptions = (
+  filterOptions?: TraceErrorEventFilterOptions | string,
+): TraceErrorEventFilterOptions => {
+  if (typeof filterOptions === "string") {
+    return { resultFilter: filterOptions };
+  }
+
+  return filterOptions ?? {};
+};
+
+/** 判断是否为 iOS 设备。 */
+const isTraceIosDevice = (eventItem: TraceEventItem) => {
+  /** 设备匹配字段。 */
+  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
+
+  return (
+    matchFields.platform === "ios" ||
+    matchFields.osName === "ios" ||
+    matchFields.system.includes("ios") ||
+    matchFields.brand.includes("iphone") ||
+    matchFields.model.includes("iphone") ||
+    matchFields.model.includes("ipad") ||
+    matchFields.model.includes("ipod")
+  );
+};
+
+/** 判断是否为 Android 设备。 */
+const isTraceAndroidDevice = (eventItem: TraceEventItem) => {
+  /** 设备匹配字段。 */
+  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
+
+  return matchFields.platform === "android" || matchFields.osName === "android" || matchFields.system.includes("android");
+};
+
+/** 判断是否为 iPhone 品牌设备。 */
+const isTraceIphoneBrandDevice = (eventItem: TraceEventItem) => {
+  /** 设备匹配字段。 */
+  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
+
+  return matchFields.brand.includes("iphone") || matchFields.model.includes("iphone");
+};
+
+/** 判断是否为开发工具测试记录。 */
+const isTraceDevtoolsTestRecord = (eventItem: TraceEventItem) => {
+  /** 设备匹配字段。 */
+  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
+
+  return (
+    matchFields.terminalModel.startsWith("devtools") ||
+    matchFields.brand.startsWith("devtools") ||
+    matchFields.model.startsWith("devtools")
+  );
+};
+
+/** 判断是否命中设备类型快捷筛选。 */
+const isMatchedTraceDeviceQuickFilter = (eventItem: TraceEventItem, deviceQuickFilter?: TraceDeviceQuickFilter) => {
+  if (!deviceQuickFilter) {
+    return true;
+  }
+
+  if (deviceQuickFilter === "ios") {
+    return isTraceIosDevice(eventItem);
+  }
+
+  return isTraceAndroidDevice(eventItem);
+};
+
+/** 判断是否命中品牌快捷筛选。 */
+const isMatchedTraceBrandQuickFilter = (eventItem: TraceEventItem, brandQuickFilter?: TraceBrandQuickFilter) => {
+  if (!brandQuickFilter) {
+    return true;
+  }
+
+  /** 是否为 iPhone 品牌设备。 */
+  const isIphoneBrandDevice = isTraceIphoneBrandDevice(eventItem);
+  if (brandQuickFilter === "iphone") {
+    return isIphoneBrandDevice;
+  }
+
+  return !isIphoneBrandDevice;
+};
+
 /** 筛选错误日志事件。 */
-export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: string) =>
-  eventItems.filter((eventItem) => {
+export const filterErrorEvents = (eventItems: TraceEventItem[], filterOptions?: TraceErrorEventFilterOptions | string) => {
+  /** 错误日志本地筛选条件。 */
+  const resolvedFilterOptions = resolveTraceErrorEventFilterOptions(filterOptions);
+
+  return eventItems.filter((eventItem) => {
     /** 归类后的事件结果。 */
     const resolvedEventResult = resolveTraceEventResult(eventItem);
     /** 是否属于错误日志展示范围。 */
@@ -960,9 +1105,22 @@ export const filterErrorEvents = (eventItems: TraceEventItem[], resultFilter?: s
       return false;
     }
 
-    if (!resultFilter) {
-      return true;
+    if (resolvedFilterOptions.resultFilter && resolvedEventResult !== resolvedFilterOptions.resultFilter) {
+      return false;
     }
 
-    return resolvedEventResult === resultFilter;
+    if (!isMatchedTraceDeviceQuickFilter(eventItem, resolvedFilterOptions.deviceQuickFilter)) {
+      return false;
+    }
+
+    if (!isMatchedTraceBrandQuickFilter(eventItem, resolvedFilterOptions.brandQuickFilter)) {
+      return false;
+    }
+
+    if (resolvedFilterOptions.isExcludeTestRecords && isTraceDevtoolsTestRecord(eventItem)) {
+      return false;
+    }
+
+    return true;
   });
+};

@@ -619,6 +619,73 @@ describe("trace utils", () => {
     expect(filterErrorEvents(eventItems, "fail").map((eventItem) => eventItem.result)).toEqual(["fail"]);
   });
 
+  it("filters error events by device quick filters", () => {
+    const iosEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_ios",
+      deviceInfo: { platform: "ios", system: "iOS 17.0", brand: "iPhone", model: "iPhone 15 Pro" },
+    };
+    const androidEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_android",
+      deviceInfo: { platform: "android", system: "Android 14", brand: "Xiaomi", model: "14" },
+    };
+
+    expect(
+      filterErrorEvents([iosEventItem, androidEventItem], { deviceQuickFilter: "ios" }).map(
+        (eventItem) => eventItem.eventId,
+      ),
+    ).toEqual(["evt_ios"]);
+    expect(
+      filterErrorEvents([iosEventItem, androidEventItem], { deviceQuickFilter: "android" }).map(
+        (eventItem) => eventItem.eventId,
+      ),
+    ).toEqual(["evt_android"]);
+  });
+
+  it("filters error events by brand quick filters", () => {
+    const iphoneEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_iphone",
+      deviceInfo: { brand: "iPhone", model: "iPhone 15 Pro" },
+    };
+    const androidEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_android",
+      deviceInfo: { brand: "Xiaomi", model: "14" },
+    };
+
+    expect(
+      filterErrorEvents([iphoneEventItem, androidEventItem], { brandQuickFilter: "iphone" }).map(
+        (eventItem) => eventItem.eventId,
+      ),
+    ).toEqual(["evt_iphone"]);
+    expect(
+      filterErrorEvents([iphoneEventItem, androidEventItem], { brandQuickFilter: "nonIphone" }).map(
+        (eventItem) => eventItem.eventId,
+      ),
+    ).toEqual(["evt_android"]);
+  });
+
+  it("excludes devtools test records from error events", () => {
+    const deviceEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_device",
+      deviceInfo: { brand: "Xiaomi", model: "14" },
+    };
+    const devtoolsEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_devtools",
+      deviceInfo: { brand: "devtools", model: "iPhone 15 Pro" },
+    };
+
+    expect(
+      filterErrorEvents([deviceEventItem, devtoolsEventItem], { isExcludeTestRecords: true }).map(
+        (eventItem) => eventItem.eventId,
+      ),
+    ).toEqual(["evt_device"]);
+  });
+
   it("classifies NO_TOKEN events as warning", () => {
     const noTokenEventItem = {
       ...createEventItem("fail"),
