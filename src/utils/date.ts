@@ -39,13 +39,13 @@ export const createRecent24HourRange = () => {
   };
 };
 
-/** 创建本日工作时段查询范围。 */
+/** 创建本日全天查询范围。 */
 export const createTodayTraceRange = () => {
   /** 今日日期。 */
   const currentDay = dayjs().startOf("day");
 
   return {
-    startTime: formatTraceDateTime(currentDay.hour(8)),
-    endTime: formatTraceDateTime(currentDay.hour(22).minute(59).second(59)),
+    startTime: formatTraceDateTime(currentDay),
+    endTime: formatTraceDateTime(currentDay.hour(23).minute(59).second(59)),
   };
 };

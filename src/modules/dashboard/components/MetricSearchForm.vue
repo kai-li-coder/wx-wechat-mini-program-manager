@@ -81,28 +81,16 @@ const emit = defineEmits<{
 const { resultOptions, eventCodeOptions, dashboardDateRangeShortcuts } = useTraceOptions();
 
 /** 转换日期范围选择器开始时间。 */
-const toDateRangeStartTime = (startDate: string, endDate: string) => {
+const toDateRangeStartTime = (startDate: string) => {
   /** 开始日期对象。 */
   const startDateTime = dayjs(startDate).startOf("day");
-  /** 结束日期对象。 */
-  const endDateTime = dayjs(endDate).startOf("day");
-  if (startDateTime.isSame(endDateTime, "day")) {
-    return formatTraceDateTime(startDateTime.hour(8));
-  }
-
   return formatTraceDateTime(startDateTime);
 };
 
 /** 转换日期范围选择器结束时间。 */
-const toDateRangeEndTime = (startDate: string, endDate: string) => {
-  /** 开始日期对象。 */
-  const startDateTime = dayjs(startDate).startOf("day");
+const toDateRangeEndTime = (endDate: string) => {
   /** 结束日期对象。 */
   const endDateTime = dayjs(endDate).startOf("day");
-  if (startDateTime.isSame(endDateTime, "day")) {
-    return formatTraceDateTime(endDateTime.hour(22).minute(59).second(59));
-  }
-
   return formatTraceDateTime(endDateTime.hour(23).minute(59).second(59));
 };
 
@@ -128,8 +116,8 @@ const serverDateRange = computed<string[] | null>({
       return;
     }
 
-    queryForm.value.startTime = toDateRangeStartTime(startDate, endDate);
-    queryForm.value.endTime = toDateRangeEndTime(startDate, endDate);
+    queryForm.value.startTime = toDateRangeStartTime(startDate);
+    queryForm.value.endTime = toDateRangeEndTime(endDate);
   },
 });
 </script>

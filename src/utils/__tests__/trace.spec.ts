@@ -208,8 +208,8 @@ describe("trace utils", () => {
       endTime: "2026-05-24 23:59:59",
     });
     const dailyTrendRows = toMetricTrendRows(metricItems, {
-      startTime: "2026-05-20 08:00:00",
-      endTime: "2026-05-20 22:59:59",
+      startTime: "2026-05-20 00:00:00",
+      endTime: "2026-05-20 23:59:59",
     });
 
     expect(yearlyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual(["1月", "2月", "3月", "4月", "5月"]);
@@ -246,23 +246,32 @@ describe("trace utils", () => {
       "05-24",
     ]);
     expect(dailyTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
-      "8点",
-      "9点",
-      "10点",
-      "11点",
-      "12点",
-      "13点",
-      "14点",
-      "15点",
-      "16点",
-      "17点",
-      "18点",
-      "19点",
-      "20点",
-      "21点",
-      "22点",
+      "00:00",
+      "01:00",
+      "02:00",
+      "03:00",
+      "04:00",
+      "05:00",
+      "06:00",
+      "07:00",
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+      "21:00",
+      "22:00",
+      "23:00",
     ]);
-    expect(dailyTrendRows[2]).toMatchObject({ metricLabel: "10点", failCount: 2, warningCount: 1 });
+    expect(dailyTrendRows[10]).toMatchObject({ metricLabel: "10:00", failCount: 2, warningCount: 1 });
   });
 
   it("builds metric items from events with classified results", () => {
@@ -440,30 +449,39 @@ describe("trace utils", () => {
         },
       ],
       {
-        startTime: "2026-05-20 08:00:00",
-        endTime: "2026-05-20 22:59:59",
+        startTime: "2026-05-20 00:00:00",
+        endTime: "2026-05-20 23:59:59",
       },
     );
 
     expect(candidateTrendRows.map((trendRow) => trendRow.metricLabel)).toEqual([
-      "8点",
-      "9点",
-      "10点",
-      "11点",
-      "12点",
-      "13点",
-      "14点",
-      "15点",
-      "16点",
-      "17点",
-      "18点",
-      "19点",
-      "20点",
-      "21点",
-      "22点",
+      "00:00",
+      "01:00",
+      "02:00",
+      "03:00",
+      "04:00",
+      "05:00",
+      "06:00",
+      "07:00",
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+      "21:00",
+      "22:00",
+      "23:00",
     ]);
-    expect(candidateTrendRows[1]).toMatchObject({ metricLabel: "9点", candidateCount: 0 });
-    expect(candidateTrendRows[2]).toMatchObject({ metricLabel: "10点", candidateCount: 2 });
+    expect(candidateTrendRows[9]).toMatchObject({ metricLabel: "09:00", candidateCount: 0 });
+    expect(candidateTrendRows[10]).toMatchObject({ metricLabel: "10:00", candidateCount: 2 });
   });
 
   it("builds error warning summary from fail event rate", () => {

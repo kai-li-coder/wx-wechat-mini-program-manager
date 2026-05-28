@@ -34,12 +34,12 @@ describe("date utils", () => {
     vi.useRealTimers();
   });
 
-  it("creates today trace range from 8 to 22", () => {
+  it("creates today trace range for full day", () => {
     vi.setSystemTime(new Date("2026-05-20T10:15:30+08:00"));
 
     expect(createTodayTraceRange()).toEqual({
-      startTime: "2026-05-20 08:00:00",
-      endTime: "2026-05-20 22:59:59",
+      startTime: "2026-05-20 00:00:00",
+      endTime: "2026-05-20 23:59:59",
     });
 
     vi.useRealTimers();

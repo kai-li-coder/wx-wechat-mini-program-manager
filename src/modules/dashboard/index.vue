@@ -36,6 +36,7 @@
 import type { TraceDashboardQuery, TraceDashboardResponse, TraceDashboardWarningThresholds } from "@/api/trace";
 import { queryTraceDashboard } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
+import { normalizeDashboardHourBuckets } from "@/modules/dashboard/composables/useDashboardHourBuckets";
 import CandidateTrendChart from "@/modules/dashboard/components/CandidateTrendChart.vue";
 import ErrorWarningPanel from "@/modules/dashboard/components/ErrorWarningPanel.vue";
 import MetricSearchForm from "@/modules/dashboard/components/MetricSearchForm.vue";
@@ -132,7 +133,8 @@ const handleSearch = async () => {
   isLoading.value = true;
   try {
     /** 后端聚合后的总览数据。 */
-    dashboardData.value = await queryTraceDashboard(dashboardQueryForm.value);
+    const dashboardResponse = await queryTraceDashboard(dashboardQueryForm.value);
+    dashboardData.value = normalizeDashboardHourBuckets(dashboardResponse, dashboardQueryForm.value);
   } finally {
     isLoading.value = false;
   }

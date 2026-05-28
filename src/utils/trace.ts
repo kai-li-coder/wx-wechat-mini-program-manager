@@ -531,7 +531,7 @@ const formatTrendBucketLabel = (dateTime: dayjs.Dayjs, granularity: TraceTrendGr
     return dateTime.format("MM-DD");
   }
 
-  return `${dateTime.hour()}点`;
+  return `${String(dateTime.hour()).padStart(2, "0")}:00`;
 };
 
 /** 创建趋势图坐标轴项。 */
@@ -546,7 +546,7 @@ const createTrendAxisItems = (
   if (granularity === "hour") {
     /** 当日日期。 */
     const currentDay = startDateTime.startOf("day");
-    for (let hour = 8; hour <= 22; hour += 1) {
+    for (let hour = 0; hour <= 23; hour += 1) {
       /** 小时坐标点。 */
       const hourDateTime = currentDay.hour(hour);
       trendAxisItems.push({
