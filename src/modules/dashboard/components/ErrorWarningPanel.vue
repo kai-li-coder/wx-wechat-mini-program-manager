@@ -52,33 +52,31 @@
 
       <!-- 阈值说明区 -->
       <div class="error-warning-panel__thresholds">
-        <span>观察：错误占比 ≥ 3% 且失败事件 ≥ 5</span>
-        <span>预警：错误占比 ≥ 5% 且失败事件 ≥ 10</span>
-        <span>严重：错误占比 ≥ 10% 且失败事件 ≥ 10，或受影响候选人占比 ≥ 5% 且受影响候选人 ≥ 3</span>
+        <span v-for="thresholdText in thresholdTextItems" :key="thresholdText">{{ thresholdText }}</span>
       </div>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import type { TraceErrorWarningLevel, TraceErrorWarningSummary } from "@/utils/trace";
+import type { TraceDashboardErrorWarning, TraceDashboardErrorWarningLevel } from "@/api/trace";
 
 const { summary, loading = false } = defineProps<{
   /** 错误预警摘要。 */
-  summary: TraceErrorWarningSummary;
+  summary: TraceDashboardErrorWarning;
   /** 加载状态。 */
   loading?: boolean;
 }>();
 
 /** 预警等级文案字典。 */
-const levelTextMap: Record<TraceErrorWarningLevel, string> = {
+const levelTextMap: Record<TraceDashboardErrorWarningLevel, string> = {
   normal: "正常",
   watch: "观察",
   warning: "预警",
   critical: "严重",
 };
 /** 预警等级描述字典。 */
-const levelDescriptionMap: Record<TraceErrorWarningLevel, string> = {
+const levelDescriptionMap: Record<TraceDashboardErrorWarningLevel, string> = {
   normal: "当前错误占比处于正常范围",
   watch: "错误占比进入观察区间",
   warning: "错误占比达到预警阈值",
@@ -90,7 +88,10 @@ const levelTagTypeMap = {
   watch: "info",
   warning: "warning",
   critical: "danger",
-} as const satisfies Record<TraceErrorWarningLevel, "success" | "info" | "warning" | "danger">;
+} as const satisfies Record<TraceDashboardErrorWarningLevel, "success" | "info" | "warning" | "danger">;
+
+/** 格式化百分比。 */
+const formatRate = (rate: number) => `${(rate * 100).toFixed(1)}%`;
 
 /** 是否存在可评估数据。 */
 const hasWarningData = computed(() => summary.eventCount > 0);
@@ -100,9 +101,12 @@ const levelText = computed(() => levelTextMap[summary.level]);
 const levelDescription = computed(() => levelDescriptionMap[summary.level]);
 /** 预警等级标签类型。 */
 const levelTagType = computed(() => levelTagTypeMap[summary.level]);
-
-/** 格式化百分比。 */
-const formatRate = (rate: number) => `${(rate * 100).toFixed(1)}%`;
+/** 预警阈值说明文案。 */
+const thresholdTextItems = computed(() => [
+  `观察：错误占比 ≥ ${formatRate(summary.thresholds.watch.failRate)} 且失败事件 ≥ ${summary.thresholds.watch.failCount}`,
+  `预警：错误占比 ≥ ${formatRate(summary.thresholds.warning.failRate)} 且失败事件 ≥ ${summary.thresholds.warning.failCount}`,
+  `严重：错误占比 ≥ ${formatRate(summary.thresholds.critical.failRate)} 且失败事件 ≥ ${summary.thresholds.critical.failCount}，或受影响候选人占比 ≥ ${formatRate(summary.thresholds.critical.affectedCandidateRate)} 且受影响候选人 ≥ ${summary.thresholds.critical.affectedCandidateCount}`,
+]);
 </script>
 
 <style scoped lang="scss">

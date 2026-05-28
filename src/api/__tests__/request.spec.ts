@@ -21,6 +21,10 @@ describe("request utils", () => {
     expect(unwrapTraceResponse({ code: 200, msg: "success", data: { ok: true } })).toEqual({ ok: true });
   });
 
+  it("unwraps code zero data payload", () => {
+    expect(unwrapTraceResponse({ code: 0, message: "success", data: { ok: true } })).toEqual({ ok: true });
+  });
+
   it("unwraps result payload", () => {
     expect(unwrapTraceResponse({ code: 200, message: "OK", result: ["item"] })).toEqual(["item"]);
   });

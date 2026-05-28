@@ -59,11 +59,11 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 
-import type { TraceMetricQuery } from "@/api/trace";
+import type { TraceDashboardQuery } from "@/api/trace";
 import { useTraceOptions } from "@/modules/trace/composables/useTraceOptions";
 import { formatTraceDate, formatTraceDateTime } from "@/utils/date";
 
-const queryForm = defineModel<TraceMetricQuery>({ required: true });
+const queryForm = defineModel<TraceDashboardQuery>({ required: true });
 
 const { loading = false } = defineProps<{
   /** 查询按钮加载状态。 */

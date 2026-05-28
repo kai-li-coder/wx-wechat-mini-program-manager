@@ -13,6 +13,18 @@ export interface TraceMetricQuery {
   result?: string;
 }
 
+/** 埋点总览查询参数。 */
+export interface TraceDashboardQuery {
+  /** 查询开始时间，格式 YYYY-MM-DD HH:mm:ss；为空表示不限制开始时间。 */
+  startTime?: string;
+  /** 查询结束时间，格式 YYYY-MM-DD HH:mm:ss；为空表示不限制结束时间。 */
+  endTime?: string;
+  /** 事件码筛选；为空表示全部事件码。 */
+  eventCode?: string;
+  /** 事件结果筛选；为空表示全部结果。 */
+  result?: string;
+}
+
 /** 埋点小时聚合项。 */
 export interface TraceMetricItem {
   /** 小时粒度时间。 */
@@ -27,6 +39,138 @@ export interface TraceMetricItem {
   flowCount: number;
   /** 涉及候选人数。 */
   candidateCount: number;
+}
+
+/** 埋点总览摘要。 */
+export interface TraceDashboardSummary {
+  /** 事件总数。 */
+  eventCount: number;
+  /** 去重后的链路数。 */
+  flowCount: number;
+  /** 去重后的候选人数。 */
+  candidateCount: number;
+}
+
+/** 埋点总览趋势粒度。 */
+export type TraceDashboardGranularity = "hour" | "day" | "month";
+
+/** 埋点总览异常趋势行。 */
+export interface TraceDashboardTrendRow {
+  /** 时间桶。 */
+  bucket: string;
+  /** 展示标签。 */
+  label: string;
+  /** 成功事件数。 */
+  successCount: number;
+  /** 失败事件数。 */
+  failCount: number;
+  /** 警告事件数。 */
+  warningCount: number;
+}
+
+/** 埋点总览异常趋势。 */
+export interface TraceDashboardTrend {
+  /** 聚合粒度。 */
+  granularity: TraceDashboardGranularity;
+  /** 趋势行列表。 */
+  rows: TraceDashboardTrendRow[];
+}
+
+/** 埋点总览候选人趋势行。 */
+export interface TraceDashboardCandidateTrendRow {
+  /** 时间桶。 */
+  bucket: string;
+  /** 展示标签。 */
+  label: string;
+  /** 去重候选人数。 */
+  candidateCount: number;
+}
+
+/** 埋点总览候选人趋势。 */
+export interface TraceDashboardCandidateTrend {
+  /** 聚合粒度。 */
+  granularity: TraceDashboardGranularity;
+  /** 候选人趋势行列表。 */
+  rows: TraceDashboardCandidateTrendRow[];
+}
+
+/** 埋点总览失败事件码排行项。 */
+export interface TraceDashboardTopErrorEventCode {
+  /** 失败事件码。 */
+  eventCode: string;
+  /** 事件数。 */
+  eventCount: number;
+  /** 去重链路数。 */
+  flowCount: number;
+  /** 去重候选人数。 */
+  candidateCount: number;
+}
+
+/** 埋点总览预警等级。 */
+export type TraceDashboardErrorWarningLevel = "normal" | "watch" | "warning" | "critical";
+
+/** 埋点总览错误预警比例与数量阈值。 */
+export interface TraceDashboardRateCountThreshold {
+  /** 失败率阈值。 */
+  failRate: number;
+  /** 失败事件数阈值。 */
+  failCount: number;
+}
+
+/** 埋点总览严重预警阈值。 */
+export interface TraceDashboardCriticalThreshold extends TraceDashboardRateCountThreshold {
+  /** 受影响候选人占比阈值。 */
+  affectedCandidateRate: number;
+  /** 受影响候选人数阈值。 */
+  affectedCandidateCount: number;
+}
+
+/** 埋点总览错误预警阈值。 */
+export interface TraceDashboardWarningThresholds {
+  /** 观察阈值。 */
+  watch: TraceDashboardRateCountThreshold;
+  /** 预警阈值。 */
+  warning: TraceDashboardRateCountThreshold;
+  /** 严重阈值。 */
+  critical: TraceDashboardCriticalThreshold;
+}
+
+/** 埋点总览错误预警摘要。 */
+export interface TraceDashboardErrorWarning {
+  /** 预警等级。 */
+  level: TraceDashboardErrorWarningLevel;
+  /** 命中预警的统计日期。 */
+  warningDate: string;
+  /** 事件总数。 */
+  eventCount: number;
+  /** 失败事件数。 */
+  failCount: number;
+  /** 失败率。 */
+  failRate: number;
+  /** 候选人数。 */
+  candidateCount: number;
+  /** 受影响候选人数。 */
+  affectedCandidateCount: number;
+  /** 受影响候选人占比。 */
+  affectedCandidateRate: number;
+  /** 触发原因。 */
+  triggerReasons: string[];
+  /** 预警阈值。 */
+  thresholds: TraceDashboardWarningThresholds;
+}
+
+/** 埋点总览聚合响应。 */
+export interface TraceDashboardResponse {
+  /** 汇总卡片数据。 */
+  summary: TraceDashboardSummary;
+  /** 异常趋势图数据。 */
+  trend: TraceDashboardTrend;
+  /** 候选人趋势图数据。 */
+  candidateTrend: TraceDashboardCandidateTrend;
+  /** 失败事件码排行数据。 */
+  topErrorEventCodes: TraceDashboardTopErrorEventCode[];
+  /** 错误预警数据。 */
+  errorWarning: TraceDashboardErrorWarning;
 }
 
 /** 链路事件查询参数。 */
@@ -128,6 +272,37 @@ type TraceFlowStringFilterKey =
   | "endTime"
   | "pageRoute";
 
+/** 埋点总览字符串筛选字段名。 */
+type TraceDashboardStringFilterKey = keyof TraceDashboardQuery;
+
+/** 写入总览非空字符串筛选参数。 */
+const appendNormalizedDashboardStringParam = (
+  normalizedParams: TraceDashboardQuery,
+  params: TraceDashboardQuery,
+  filterKey: TraceDashboardStringFilterKey,
+) => {
+  /** 去除首尾空格后的筛选值。 */
+  const filterValue = String(params[filterKey] ?? "").trim();
+  if (!filterValue) {
+    return;
+  }
+
+  normalizedParams[filterKey] = filterValue;
+};
+
+/** 清理总览查询参数，空筛选字段不传给后端。 */
+const normalizeTraceDashboardQuery = (params: TraceDashboardQuery): TraceDashboardQuery => {
+  /** 清理后的总览查询参数。 */
+  const normalizedParams: TraceDashboardQuery = {};
+
+  appendNormalizedDashboardStringParam(normalizedParams, params, "startTime");
+  appendNormalizedDashboardStringParam(normalizedParams, params, "endTime");
+  appendNormalizedDashboardStringParam(normalizedParams, params, "eventCode");
+  appendNormalizedDashboardStringParam(normalizedParams, params, "result");
+
+  return normalizedParams;
+};
+
 /** 写入非空字符串筛选参数。 */
 const appendNormalizedStringParam = (
   normalizedParams: TraceFlowQuery,
@@ -186,6 +361,12 @@ const normalizeTraceFlowQuery = (params: TraceFlowQuery): TraceFlowQuery => {
 /** 查询答题异常小时聚合数据。 */
 export const queryTraceMetrics = (params: TraceMetricQuery) =>
   httpGet<TraceMetricItem[]>("/admin/candidate/trace/metrics", { params });
+
+/** 查询埋点总览聚合数据。 */
+export const queryTraceDashboard = (params: TraceDashboardQuery) =>
+  httpGet<TraceDashboardResponse>("/admin/candidate/trace/dashboard", {
+    params: normalizeTraceDashboardQuery(params),
+  });
 
 /** 查询答题链路事件明细。 */
 export const queryTraceFlow = (params: TraceFlowQuery) =>

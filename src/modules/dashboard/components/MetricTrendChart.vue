@@ -21,48 +21,32 @@ import { GridComponent, LegendComponent, TooltipComponent } from "echarts/compon
 import { BarChart, LineChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 
-import type { TraceMetricItem } from "@/api/trace";
-import { toMetricTrendRows } from "@/utils/trace";
+import type { TraceDashboardGranularity, TraceDashboardTrend } from "@/api/trace";
 
 echarts.use([GridComponent, LegendComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
 
-const { metricItems, loading = false, startTime, endTime } = defineProps<{
-  /** 埋点聚合列表。 */
-  metricItems: TraceMetricItem[];
+const { trend, loading = false } = defineProps<{
+  /** 后端聚合后的异常趋势数据。 */
+  trend: TraceDashboardTrend;
   /** 图表加载状态。 */
   loading?: boolean;
-  /** 查询开始时间。 */
-  startTime?: string;
-  /** 查询结束时间。 */
-  endTime?: string;
 }>();
 
+/** 趋势粒度文案字典。 */
+const trendGranularityTextMap: Record<TraceDashboardGranularity, string> = {
+  hour: "按小时聚合",
+  day: "按日聚合",
+  month: "按月聚合",
+};
 /** 图表根节点。 */
 const chartRootRef = useTemplateRef<HTMLDivElement>("chartRoot");
 /** ECharts 图表实例。 */
 let chartInstance: echarts.ECharts | null = null;
 
 /** 趋势图聚合文案。 */
-const trendGranularityText = computed(() => {
-  if (!startTime || !endTime) {
-    return "按小时聚合";
-  }
-
-  /** 开始日期。 */
-  const startDate = startTime.slice(0, 10);
-  /** 结束日期。 */
-  const endDate = endTime.slice(0, 10);
-  if (startDate === endDate) {
-    return "按小时聚合";
-  }
-
-  /** 日期间隔毫秒数。 */
-  const dateRangeDuration = new Date(endDate).getTime() - new Date(startDate).getTime();
-  /** 日期间隔天数。 */
-  const dateRangeDays = dateRangeDuration / 86_400_000;
-
-  return dateRangeDays > 31 ? "按月聚合" : "按日聚合";
-});
+const trendGranularityText = computed(() => trendGranularityTextMap[trend.granularity]);
+/** 异常趋势行数据。 */
+const trendRows = computed(() => trend.rows ?? []);
 
 /** 渲染趋势图。 */
 const renderChart = () => {
@@ -74,8 +58,6 @@ const renderChart = () => {
     chartInstance = echarts.init(chartRootRef.value);
   }
 
-  /** 趋势图行数据。 */
-  const trendRows = toMetricTrendRows(metricItems, { startTime, endTime });
   chartInstance.setOption({
     color: ["#ef4444", "#f59e0b", "#10b981"],
     tooltip: { trigger: "axis" },
@@ -83,7 +65,7 @@ const renderChart = () => {
     grid: { top: 44, right: 16, bottom: 32, left: 40 },
     xAxis: {
       type: "category",
-      data: trendRows.map((trendRow) => trendRow.metricLabel ?? trendRow.metricHour.slice(5, 16)),
+      data: trendRows.value.map((trendRow) => trendRow.label || trendRow.bucket),
       axisTick: { show: false },
     },
     yAxis: {
@@ -92,24 +74,24 @@ const renderChart = () => {
       splitLine: { lineStyle: { color: "#e5e7eb" } },
     },
     series: [
-      { name: "失败", type: "bar", stack: "total", data: trendRows.map((trendRow) => trendRow.failCount) },
+      { name: "失败", type: "bar", stack: "total", data: trendRows.value.map((trendRow) => trendRow.failCount) },
       {
         name: "警告",
         type: "bar",
         stack: "total",
-        data: trendRows.map((trendRow) => trendRow.warningCount),
+        data: trendRows.value.map((trendRow) => trendRow.warningCount),
       },
       {
         name: "成功",
         type: "line",
         smooth: true,
-        data: trendRows.map((trendRow) => trendRow.successCount),
+        data: trendRows.value.map((trendRow) => trendRow.successCount),
       },
     ],
   });
 };
 
-watch(() => [metricItems, startTime, endTime], renderChart, { deep: true });
+watch(() => trend, renderChart, { deep: true });
 
 tryOnMounted(() => {
   renderChart();

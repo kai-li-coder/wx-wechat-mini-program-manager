@@ -35,17 +35,17 @@ import { GridComponent, TooltipComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 
-import type { TraceMetricItem } from "@/api/trace";
-import { formatTraceEventCode, toTopFailEventRankItems } from "@/utils/trace";
+import type { TraceDashboardTopErrorEventCode } from "@/api/trace";
+import { formatTraceEventCode } from "@/utils/trace";
 
 echarts.use([GridComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
 
 /** 错误事件码图表类型。 */
 type TopErrorChartMode = "bar" | "line";
 
-const { metricItems, loading = false } = defineProps<{
-  /** 埋点聚合列表。 */
-  metricItems: TraceMetricItem[];
+const { topErrorEventCodes, loading = false } = defineProps<{
+  /** 后端聚合后的失败事件码排行。 */
+  topErrorEventCodes: TraceDashboardTopErrorEventCode[];
   /** 图表加载状态。 */
   loading?: boolean;
 }>();
@@ -58,7 +58,7 @@ const chartRootRef = useTemplateRef<HTMLDivElement>("chartRoot");
 let chartInstance: echarts.ECharts | null = null;
 
 /** Top 失败事件码排行。 */
-const topFailEventRankItems = computed(() => toTopFailEventRankItems(metricItems));
+const topFailEventRankItems = computed(() => topErrorEventCodes ?? []);
 /** 是否存在失败事件码数据。 */
 const hasTopFailEventData = computed(() => topFailEventRankItems.value.length > 0);
 
@@ -167,7 +167,7 @@ const renderChart = () => {
   renderBarChart(eventCodeLabels, eventCounts);
 };
 
-watch(() => [metricItems, chartMode.value], renderChart, { deep: true });
+watch(() => [topErrorEventCodes, chartMode.value], renderChart, { deep: true });
 
 tryOnMounted(() => {
   renderChart();

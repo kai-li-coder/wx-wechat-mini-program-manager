@@ -10,41 +10,31 @@
     </PageHeader>
 
     <!-- 查询条件区 -->
-    <MetricSearchForm v-model="metricQueryForm" :loading="isLoading" @reset="handleReset" @search="handleSearch" />
+    <MetricSearchForm v-model="dashboardQueryForm" :loading="isLoading" @reset="handleReset" @search="handleSearch" />
 
     <!-- 指标汇总区 -->
-    <MetricSummary :summary="metricSummary" />
+    <MetricSummary :summary="dashboardData.summary" />
 
     <!-- 图表与分析区 -->
     <div class="dashboard-page__content">
       <!-- 主图表区 -->
       <div class="dashboard-page__main-charts">
-        <MetricTrendChart
-          :end-time="appliedEndTime"
-          :loading="isLoading"
-          :metric-items="metricItems"
-          :start-time="appliedStartTime"
-        />
-        <CandidateTrendChart
-          :end-time="appliedEndTime"
-          :event-items="filteredEventItems"
-          :loading="isLoading"
-          :start-time="appliedStartTime"
-        />
+        <MetricTrendChart :loading="isLoading" :trend="dashboardData.trend" />
+        <CandidateTrendChart :candidate-trend="dashboardData.candidateTrend" :loading="isLoading" />
       </div>
 
       <!-- 右侧分析区 -->
       <div class="dashboard-page__analysis">
-        <TopErrorEventCodeChart :loading="isLoading" :metric-items="metricItems" />
-        <ErrorWarningPanel :loading="isLoading" :summary="errorWarningSummary" />
+        <TopErrorEventCodeChart :loading="isLoading" :top-error-event-codes="dashboardData.topErrorEventCodes" />
+        <ErrorWarningPanel :loading="isLoading" :summary="dashboardData.errorWarning" />
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { TraceEventItem, TraceFlowQuery, TraceMetricQuery } from "@/api/trace";
-import { queryTraceFlow } from "@/api/trace";
+import type { TraceDashboardQuery, TraceDashboardResponse, TraceDashboardWarningThresholds } from "@/api/trace";
+import { queryTraceDashboard } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
 import CandidateTrendChart from "@/modules/dashboard/components/CandidateTrendChart.vue";
 import ErrorWarningPanel from "@/modules/dashboard/components/ErrorWarningPanel.vue";
@@ -53,122 +43,75 @@ import MetricSummary from "@/modules/dashboard/components/MetricSummary.vue";
 import MetricTrendChart from "@/modules/dashboard/components/MetricTrendChart.vue";
 import TopErrorEventCodeChart from "@/modules/dashboard/components/TopErrorEventCodeChart.vue";
 import { createTodayTraceRange } from "@/utils/date";
-import {
-  aggregateMetricSummary,
-  resolveTraceEventResult,
-  toErrorWarningSummary,
-  toMetricItemsFromEvents,
-} from "@/utils/trace";
 
-/** 总览页事件明细分页大小。 */
-const DASHBOARD_EVENT_PAGE_SIZE = 200;
+/** 错误预警默认阈值。 */
+const defaultWarningThresholds: TraceDashboardWarningThresholds = {
+  watch: {
+    failRate: 0.03,
+    failCount: 5,
+  },
+  warning: {
+    failRate: 0.05,
+    failCount: 10,
+  },
+  critical: {
+    failRate: 0.1,
+    failCount: 10,
+    affectedCandidateRate: 0.05,
+    affectedCandidateCount: 3,
+  },
+};
 
 /** 创建默认聚合查询条件。 */
-const createDefaultMetricQuery = (): TraceMetricQuery => ({
+const createDefaultDashboardQuery = (): TraceDashboardQuery => ({
   ...createTodayTraceRange(),
   eventCode: "",
   result: "",
 });
 
-/** 聚合查询表单。 */
-const metricQueryForm = ref<TraceMetricQuery>(createDefaultMetricQuery());
-/** 总览页链路事件明细。 */
-const eventItems = ref<TraceEventItem[]>([]);
-/** 错误预警链路事件明细。 */
-const warningEventItems = ref<TraceEventItem[]>([]);
-/** 已应用的结果筛选值。 */
-const appliedResultFilter = ref("");
-/** 已应用的开始时间。 */
-const appliedStartTime = ref(metricQueryForm.value.startTime);
-/** 已应用的结束时间。 */
-const appliedEndTime = ref(metricQueryForm.value.endTime);
+/** 创建空总览响应，避免接口加载前组件读取空对象。 */
+const createEmptyDashboardData = (): TraceDashboardResponse => ({
+  summary: {
+    eventCount: 0,
+    flowCount: 0,
+    candidateCount: 0,
+  },
+  trend: {
+    granularity: "day",
+    rows: [],
+  },
+  candidateTrend: {
+    granularity: "day",
+    rows: [],
+  },
+  topErrorEventCodes: [],
+  errorWarning: {
+    level: "normal",
+    warningDate: "",
+    eventCount: 0,
+    failCount: 0,
+    failRate: 0,
+    candidateCount: 0,
+    affectedCandidateCount: 0,
+    affectedCandidateRate: 0,
+    triggerReasons: [],
+    thresholds: defaultWarningThresholds,
+  },
+});
+
+/** 总览查询表单。 */
+const dashboardQueryForm = ref<TraceDashboardQuery>(createDefaultDashboardQuery());
+/** 总览聚合数据。 */
+const dashboardData = ref<TraceDashboardResponse>(createEmptyDashboardData());
 /** 页面加载状态。 */
 const isLoading = ref(false);
-
-/** 按归类结果筛选后的链路事件明细。 */
-const filteredEventItems = computed(() => {
-  /** 结果筛选值。 */
-  if (!appliedResultFilter.value) {
-    return eventItems.value;
-  }
-
-  return eventItems.value.filter((eventItem) => resolveTraceEventResult(eventItem) === appliedResultFilter.value);
-});
-/** 聚合数据列表。 */
-const metricItems = computed(() => toMetricItemsFromEvents(filteredEventItems.value));
-/** 埋点聚合摘要。 */
-const metricSummary = computed(() => aggregateMetricSummary(metricItems.value));
-/** 错误预警摘要。 */
-const errorWarningSummary = computed(() =>
-  toErrorWarningSummary(warningEventItems.value, {
-    startTime: appliedStartTime.value,
-    endTime: appliedEndTime.value,
-  }),
-);
-
-/** 创建总览页链路事件查询条件。 */
-const createDashboardFlowQuery = (pageNum: number): TraceFlowQuery => ({
-  eventCode: metricQueryForm.value.eventCode,
-  startTime: metricQueryForm.value.startTime,
-  endTime: metricQueryForm.value.endTime,
-  pageNum,
-  pageSize: DASHBOARD_EVENT_PAGE_SIZE,
-});
-
-/** 创建总览页错误预警查询条件。 */
-const createDashboardWarningFlowQuery = (pageNum: number): TraceFlowQuery => ({
-  startTime: metricQueryForm.value.startTime,
-  endTime: metricQueryForm.value.endTime,
-  pageNum,
-  pageSize: DASHBOARD_EVENT_PAGE_SIZE,
-});
-
-/** 查询总览页全部分页链路事件明细。 */
-const queryDashboardPagedEventItems = async (createFlowQuery: (pageNum: number) => TraceFlowQuery) => {
-  /** 第一页事件查询结果。 */
-  const firstPageResult = await queryTraceFlow(createFlowQuery(1));
-  /** 已查询事件列表。 */
-  const queriedEventItems = [...firstPageResult.records];
-  /** 总页数。 */
-  const pageCount = Math.ceil(firstPageResult.total / DASHBOARD_EVENT_PAGE_SIZE);
-  if (pageCount <= 1) {
-    return queriedEventItems;
-  }
-
-  /** 剩余页码列表。 */
-  const remainingPageNums = Array.from({ length: pageCount - 1 }, (_, pageIndex) => pageIndex + 2);
-  /** 剩余页查询结果。 */
-  const remainingPageResults = await Promise.all(
-    remainingPageNums.map((pageNum) => queryTraceFlow(createFlowQuery(pageNum))),
-  );
-
-  remainingPageResults.forEach((pageResult) => {
-    queriedEventItems.push(...pageResult.records);
-  });
-
-  return queriedEventItems;
-};
-
-/** 查询总览页当前筛选链路事件明细。 */
-const queryDashboardEventItems = () => queryDashboardPagedEventItems(createDashboardFlowQuery);
-
-/** 查询总览页错误预警链路事件明细。 */
-const queryDashboardWarningEventItems = () => queryDashboardPagedEventItems(createDashboardWarningFlowQuery);
 
 /** 查询聚合数据。 */
 const handleSearch = async () => {
   isLoading.value = true;
   try {
-    /** 总览查询结果。 */
-    const [dashboardEventItems, dashboardWarningEventItems] = await Promise.all([
-      queryDashboardEventItems(),
-      queryDashboardWarningEventItems(),
-    ]);
-    eventItems.value = dashboardEventItems;
-    warningEventItems.value = dashboardWarningEventItems;
-    appliedResultFilter.value = String(metricQueryForm.value.result ?? "").trim();
-    appliedStartTime.value = metricQueryForm.value.startTime;
-    appliedEndTime.value = metricQueryForm.value.endTime;
+    /** 后端聚合后的总览数据。 */
+    dashboardData.value = await queryTraceDashboard(dashboardQueryForm.value);
   } finally {
     isLoading.value = false;
   }
@@ -176,7 +119,7 @@ const handleSearch = async () => {
 
 /** 重置查询条件并刷新。 */
 const handleReset = async () => {
-  metricQueryForm.value = createDefaultMetricQuery();
+  dashboardQueryForm.value = createDefaultDashboardQuery();
   await handleSearch();
 };
 

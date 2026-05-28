@@ -36,6 +36,9 @@ interface ApiBaseResolveOptions {
 /** 默认接口请求基础地址。 */
 export const DEFAULT_API_BASE = "/api";
 
+/** 后端通用成功状态码集合，兼容管理端 code=200 与新聚合接口 code=0。 */
+const SUCCESS_CODE_SET = new Set([0, 200]);
+
 /** 小程序开发环境模式名。 */
 export const MINIAPP_DEVELOPMENT_MODE = "miniapp-development";
 
@@ -95,7 +98,7 @@ export const attachAuthorizationHeader = (config: InternalAxiosRequestConfig) =>
 
 /** 从后端响应结构中解出业务数据。 */
 export const unwrapTraceResponse = <T>(payload: TraceApiResponse<T>): T => {
-  if (payload.code !== 200) {
+  if (!SUCCESS_CODE_SET.has(payload.code)) {
     throw new Error(payload.message || payload.msg || "请求失败");
   }
 

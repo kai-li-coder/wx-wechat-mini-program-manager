@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { httpGet } from "@/api/request";
-import { queryTraceFlow } from "@/api/trace";
+import { queryTraceDashboard, queryTraceFlow } from "@/api/trace";
 
 vi.mock("@/api/request", () => ({
   httpGet: vi.fn(),
@@ -91,6 +91,93 @@ describe("trace api", () => {
       params: {
         pageNum: 1,
         pageSize: 50,
+      },
+    });
+  });
+
+  it("omits empty dashboard filters", async () => {
+    vi.mocked(httpGet).mockResolvedValue({
+      summary: { eventCount: 0, flowCount: 0, candidateCount: 0 },
+      trend: { granularity: "day", rows: [] },
+      candidateTrend: { granularity: "day", rows: [] },
+      topErrorEventCodes: [],
+      errorWarning: {
+        level: "normal",
+        warningDate: "",
+        eventCount: 0,
+        failCount: 0,
+        failRate: 0,
+        candidateCount: 0,
+        affectedCandidateCount: 0,
+        affectedCandidateRate: 0,
+        triggerReasons: [],
+        thresholds: {
+          watch: { failRate: 0.03, failCount: 5 },
+          warning: { failRate: 0.05, failCount: 10 },
+          critical: {
+            failRate: 0.1,
+            failCount: 10,
+            affectedCandidateRate: 0.05,
+            affectedCandidateCount: 3,
+          },
+        },
+      },
+    });
+
+    await queryTraceDashboard({
+      startTime: "",
+      endTime: "   ",
+      eventCode: "",
+      result: "",
+    });
+
+    expect(httpGet).toHaveBeenCalledWith("/admin/candidate/trace/dashboard", {
+      params: {},
+    });
+  });
+
+  it("keeps non-empty dashboard filters", async () => {
+    vi.mocked(httpGet).mockResolvedValue({
+      summary: { eventCount: 0, flowCount: 0, candidateCount: 0 },
+      trend: { granularity: "day", rows: [] },
+      candidateTrend: { granularity: "day", rows: [] },
+      topErrorEventCodes: [],
+      errorWarning: {
+        level: "normal",
+        warningDate: "",
+        eventCount: 0,
+        failCount: 0,
+        failRate: 0,
+        candidateCount: 0,
+        affectedCandidateCount: 0,
+        affectedCandidateRate: 0,
+        triggerReasons: [],
+        thresholds: {
+          watch: { failRate: 0.03, failCount: 5 },
+          warning: { failRate: 0.05, failCount: 10 },
+          critical: {
+            failRate: 0.1,
+            failCount: 10,
+            affectedCandidateRate: 0.05,
+            affectedCandidateCount: 3,
+          },
+        },
+      },
+    });
+
+    await queryTraceDashboard({
+      startTime: " 2026-05-20 08:00:00 ",
+      endTime: " 2026-05-20 22:59:59 ",
+      eventCode: " upload_fail ",
+      result: " fail ",
+    });
+
+    expect(httpGet).toHaveBeenCalledWith("/admin/candidate/trace/dashboard", {
+      params: {
+        startTime: "2026-05-20 08:00:00",
+        endTime: "2026-05-20 22:59:59",
+        eventCode: "upload_fail",
+        result: "fail",
       },
     });
   });

@@ -38,25 +38,26 @@ import { GridComponent, TooltipComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 
-import type { TraceEventItem } from "@/api/trace";
-import { toCandidateTrendRows } from "@/utils/trace";
+import type { TraceDashboardCandidateTrend, TraceDashboardGranularity } from "@/api/trace";
 
 echarts.use([GridComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
 
 /** 候选人趋势图类型。 */
 type CandidateTrendChartMode = "line" | "bar";
 
-const { eventItems, loading = false, startTime, endTime } = defineProps<{
-  /** 链路事件明细列表。 */
-  eventItems: TraceEventItem[];
+const { candidateTrend, loading = false } = defineProps<{
+  /** 后端聚合后的候选人趋势数据。 */
+  candidateTrend: TraceDashboardCandidateTrend;
   /** 图表加载状态。 */
   loading?: boolean;
-  /** 查询开始时间。 */
-  startTime?: string;
-  /** 查询结束时间。 */
-  endTime?: string;
 }>();
 
+/** 趋势粒度文案字典。 */
+const trendGranularityTextMap: Record<TraceDashboardGranularity, string> = {
+  hour: "按小时聚合",
+  day: "按日聚合",
+  month: "按月聚合",
+};
 /** 图表根节点。 */
 const chartRootRef = useTemplateRef<HTMLDivElement>("chartRoot");
 /** 当前图表类型。 */
@@ -65,33 +66,14 @@ const chartMode = ref<CandidateTrendChartMode>("line");
 let chartInstance: echarts.ECharts | null = null;
 
 /** 候选人趋势行。 */
-const candidateTrendRows = computed(() => toCandidateTrendRows(eventItems, { startTime, endTime }));
+const candidateTrendRows = computed(() => candidateTrend.rows ?? []);
 /** 是否存在候选人趋势数据。 */
 const hasCandidateTrendData = computed(() =>
   candidateTrendRows.value.some((candidateTrendRow) => candidateTrendRow.candidateCount > 0),
 );
 
 /** 趋势图聚合文案。 */
-const trendGranularityText = computed(() => {
-  if (!startTime || !endTime) {
-    return "按小时聚合";
-  }
-
-  /** 开始日期。 */
-  const startDate = startTime.slice(0, 10);
-  /** 结束日期。 */
-  const endDate = endTime.slice(0, 10);
-  if (startDate === endDate) {
-    return "按小时聚合";
-  }
-
-  /** 日期间隔毫秒数。 */
-  const dateRangeDuration = new Date(endDate).getTime() - new Date(startDate).getTime();
-  /** 日期间隔天数。 */
-  const dateRangeDays = dateRangeDuration / 86_400_000;
-
-  return dateRangeDays > 31 ? "按月聚合" : "按日聚合";
-});
+const trendGranularityText = computed(() => trendGranularityTextMap[candidateTrend.granularity]);
 
 /** 渲染候选人趋势图。 */
 const renderChart = () => {
@@ -104,9 +86,7 @@ const renderChart = () => {
   }
 
   /** 坐标轴标签列表。 */
-  const axisLabels = candidateTrendRows.value.map(
-    (candidateTrendRow) => candidateTrendRow.metricLabel ?? candidateTrendRow.metricHour.slice(5, 16),
-  );
+  const axisLabels = candidateTrendRows.value.map((candidateTrendRow) => candidateTrendRow.label || candidateTrendRow.bucket);
 
   chartInstance.clear();
   chartInstance.setOption({
@@ -136,7 +116,7 @@ const renderChart = () => {
   });
 };
 
-watch(() => [eventItems, startTime, endTime, chartMode.value], renderChart, { deep: true });
+watch(() => [candidateTrend, chartMode.value], renderChart, { deep: true });
 
 tryOnMounted(() => {
   renderChart();
