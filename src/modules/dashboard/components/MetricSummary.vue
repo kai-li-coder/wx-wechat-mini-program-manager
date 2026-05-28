@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import type { TraceMetricSummary } from "@/utils/trace";
+import type { TraceDashboardSummary } from "@/api/trace";
 
 defineProps<{
   /** 埋点聚合摘要。 */
-  summary: TraceMetricSummary;
+  summary: TraceDashboardSummary;
 }>();
 </script>
 

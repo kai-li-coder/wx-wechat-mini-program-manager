@@ -109,30 +109,24 @@ export interface TraceDashboardTopErrorEventCode {
 /** 埋点总览预警等级。 */
 export type TraceDashboardErrorWarningLevel = "normal" | "watch" | "warning" | "critical";
 
-/** 埋点总览错误预警比例与数量阈值。 */
-export interface TraceDashboardRateCountThreshold {
-  /** 失败率阈值。 */
-  failRate: number;
-  /** 失败事件数阈值。 */
-  failCount: number;
-}
-
-/** 埋点总览严重预警阈值。 */
-export interface TraceDashboardCriticalThreshold extends TraceDashboardRateCountThreshold {
-  /** 受影响候选人占比阈值。 */
-  affectedCandidateRate: number;
-  /** 受影响候选人数阈值。 */
-  affectedCandidateCount: number;
-}
-
 /** 埋点总览错误预警阈值。 */
 export interface TraceDashboardWarningThresholds {
-  /** 观察阈值。 */
-  watch: TraceDashboardRateCountThreshold;
-  /** 预警阈值。 */
-  warning: TraceDashboardRateCountThreshold;
-  /** 严重阈值。 */
-  critical: TraceDashboardCriticalThreshold;
+  /** 观察失败率阈值。 */
+  watchFailRate: number;
+  /** 观察失败事件数阈值。 */
+  watchFailCount: number;
+  /** 预警失败率阈值。 */
+  warningFailRate: number;
+  /** 预警失败事件数阈值。 */
+  warningFailCount: number;
+  /** 严重失败率阈值。 */
+  criticalFailRate: number;
+  /** 严重失败事件数阈值。 */
+  criticalFailCount: number;
+  /** 严重受影响候选人占比阈值。 */
+  criticalCandidateRate: number;
+  /** 严重受影响候选人数阈值。 */
+  criticalCandidateCount: number;
 }
 
 /** 埋点总览错误预警摘要。 */
@@ -140,7 +134,7 @@ export interface TraceDashboardErrorWarning {
   /** 预警等级。 */
   level: TraceDashboardErrorWarningLevel;
   /** 命中预警的统计日期。 */
-  warningDate: string;
+  warningDate: string | null;
   /** 事件总数。 */
   eventCount: number;
   /** 失败事件数。 */

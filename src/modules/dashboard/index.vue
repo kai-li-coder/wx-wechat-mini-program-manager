@@ -46,20 +46,14 @@ import { createTodayTraceRange } from "@/utils/date";
 
 /** 错误预警默认阈值。 */
 const defaultWarningThresholds: TraceDashboardWarningThresholds = {
-  watch: {
-    failRate: 0.03,
-    failCount: 5,
-  },
-  warning: {
-    failRate: 0.05,
-    failCount: 10,
-  },
-  critical: {
-    failRate: 0.1,
-    failCount: 10,
-    affectedCandidateRate: 0.05,
-    affectedCandidateCount: 3,
-  },
+  watchFailRate: 0.03,
+  watchFailCount: 5,
+  warningFailRate: 0.05,
+  warningFailCount: 10,
+  criticalFailRate: 0.1,
+  criticalFailCount: 10,
+  criticalCandidateRate: 0.05,
+  criticalCandidateCount: 3,
 };
 
 /** 创建默认聚合查询条件。 */
@@ -87,7 +81,7 @@ const createEmptyDashboardData = (): TraceDashboardResponse => ({
   topErrorEventCodes: [],
   errorWarning: {
     level: "normal",
-    warningDate: "",
+    warningDate: null,
     eventCount: 0,
     failCount: 0,
     failRate: 0,

@@ -23,7 +23,7 @@
       <!-- 预警状态区 -->
       <div class="error-warning-panel__status">
         <strong>{{ levelDescription }}</strong>
-        <span>{{ summary.warningDate }} 统计结果</span>
+        <span>{{ warningDateText }} 统计结果</span>
       </div>
 
       <!-- 预警指标区 -->
@@ -95,6 +95,8 @@ const formatRate = (rate: number) => `${(rate * 100).toFixed(1)}%`;
 
 /** 是否存在可评估数据。 */
 const hasWarningData = computed(() => summary.eventCount > 0);
+/** 预警统计日期文案。 */
+const warningDateText = computed(() => summary.warningDate || "未指定日期");
 /** 预警等级文案。 */
 const levelText = computed(() => levelTextMap[summary.level]);
 /** 预警等级描述。 */
@@ -103,9 +105,9 @@ const levelDescription = computed(() => levelDescriptionMap[summary.level]);
 const levelTagType = computed(() => levelTagTypeMap[summary.level]);
 /** 预警阈值说明文案。 */
 const thresholdTextItems = computed(() => [
-  `观察：错误占比 ≥ ${formatRate(summary.thresholds.watch.failRate)} 且失败事件 ≥ ${summary.thresholds.watch.failCount}`,
-  `预警：错误占比 ≥ ${formatRate(summary.thresholds.warning.failRate)} 且失败事件 ≥ ${summary.thresholds.warning.failCount}`,
-  `严重：错误占比 ≥ ${formatRate(summary.thresholds.critical.failRate)} 且失败事件 ≥ ${summary.thresholds.critical.failCount}，或受影响候选人占比 ≥ ${formatRate(summary.thresholds.critical.affectedCandidateRate)} 且受影响候选人 ≥ ${summary.thresholds.critical.affectedCandidateCount}`,
+  `观察：错误占比 ≥ ${formatRate(summary.thresholds.watchFailRate)} 且失败事件 ≥ ${summary.thresholds.watchFailCount}`,
+  `预警：错误占比 ≥ ${formatRate(summary.thresholds.warningFailRate)} 且失败事件 ≥ ${summary.thresholds.warningFailCount}`,
+  `严重：错误占比 ≥ ${formatRate(summary.thresholds.criticalFailRate)} 且失败事件 ≥ ${summary.thresholds.criticalFailCount}，或受影响候选人占比 ≥ ${formatRate(summary.thresholds.criticalCandidateRate)} 且受影响候选人 ≥ ${summary.thresholds.criticalCandidateCount}`,
 ]);
 </script>
 
