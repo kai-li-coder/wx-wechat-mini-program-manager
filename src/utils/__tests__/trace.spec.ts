@@ -20,6 +20,7 @@ import {
   toMetricItemsFromEvents,
   toMetricTrendRows,
   toTopFailEventRankItems,
+  traceEventCodes,
 } from "@/utils/trace";
 
 /** 构造测试用聚合数据。 */
@@ -73,12 +74,44 @@ const onlineStageLabelCases = [
   ["codex_production_telemetry_check", "生产埋点连通性检测"],
 ] as const;
 
-/** 线上已出现的事件码中文文案用例。 */
-const onlineEventCodeLabelCases = [
+/** 答题链路标准事件码中文文案用例。 */
+const interviewTelemetryEventCodeLabelCases = [
+  ["flow_enter", "流程进入"],
+  ["flow_leave", "流程离开"],
+  ["route_blocked", "路由阻断"],
+  ["auth_redirect", "鉴权跳转"],
+  ["network_fail", "网络失败"],
+  ["business_fail", "业务失败"],
+  ["already_answered_recovery", "已答恢复"],
+  ["init_success", "初始化成功"],
+  ["init_fail", "初始化失败"],
+  ["question_load_success", "题目加载成功"],
+  ["question_load_fail", "题目加载失败"],
+  ["question_audio_fail", "题目音频失败"],
+  ["camera_init_fail", "相机初始化失败"],
+  ["camera_start_fail", "录制启动失败"],
+  ["camera_stop_unexpected", "录制异常停止"],
+  ["record_start_success", "录制启动成功"],
+  ["record_stop_success", "录制停止成功"],
+  ["record_stop_fail", "录制停止失败"],
+  ["record_stop_timeout", "录制停止超时"],
+  ["upload_credential_fail", "上传凭证失败"],
   ["upload_fail", "上传失败"],
-  ["interrupt_check", "中断检测"],
-  ["auth_redirect", "鉴权重定向"],
-  ["flow_leave", "离开答题链路"],
+  ["submit_success", "答题提交成功"],
+  ["submit_fail", "答题提交失败"],
+  ["unexpected_hide", "页面异常隐藏"],
+  ["interrupt_check", "中断检查"],
+  ["interrupt_continue", "中断继续"],
+  ["auto_submit", "自动提交"],
+  ["back_blocked", "返回阻断"],
+  ["evaluation_submit", "评价提交"],
+] as const;
+
+/** 兼容保留的历史事件码中文文案用例。 */
+const legacyEventCodeLabelCases = [
+  ["camera_init_timeout", "摄像头初始化超时"],
+  ["oss_upload_fail", "OSS 上传失败"],
+  ["codex_production_telemetry_check", "生产埋点连通性检测"],
 ] as const;
 
 /** 构造测试用事件。 */
@@ -619,11 +652,20 @@ describe("trace utils", () => {
   });
 
   it("formats trace event code labels", () => {
-    onlineEventCodeLabelCases.forEach(([eventCode, eventCodeLabel]) => {
+    interviewTelemetryEventCodeLabelCases.forEach(([eventCode, eventCodeLabel]) => {
+      expect(formatTraceEventCode(eventCode)).toBe(`${eventCodeLabel}（${eventCode}）`);
+    });
+    legacyEventCodeLabelCases.forEach(([eventCode, eventCodeLabel]) => {
       expect(formatTraceEventCode(eventCode)).toBe(`${eventCodeLabel}（${eventCode}）`);
     });
     expect(formatTraceEventCode("custom_event")).toBe("custom_event");
     expect(formatTraceEventCode("")).toBe("-");
+  });
+
+  it("includes all standard telemetry event codes in filter options", () => {
+    expect(traceEventCodes).toEqual(
+      expect.arrayContaining(interviewTelemetryEventCodeLabelCases.map(([eventCode]) => eventCode)),
+    );
   });
 
   it("formats terminal model from device brand and model", () => {

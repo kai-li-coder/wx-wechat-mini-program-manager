@@ -48,7 +48,6 @@ const resultOptions = [
 
 /** 错误日志结果选项。 */
 const errorResultOptions = [
-  { label: "全部异常", value: "" },
   { label: "失败", value: "fail" },
   { label: "警告", value: "warning" },
 ];

@@ -239,12 +239,43 @@ const traceStageLabelMap = new Map<string, string>([
 /** 当前支持筛选的全部链路阶段编码。 */
 export const traceStageCodes = [...traceStageLabelMap.keys()];
 
+/** 答题链路标准事件码中文文案字典。 */
+const interviewTelemetryEventCodeLabelEntries = [
+  ["flow_enter", "流程进入"],
+  ["flow_leave", "流程离开"],
+  ["route_blocked", "路由阻断"],
+  ["auth_redirect", "鉴权跳转"],
+  ["network_fail", "网络失败"],
+  ["business_fail", "业务失败"],
+  ["already_answered_recovery", "已答恢复"],
+  ["init_success", "初始化成功"],
+  ["init_fail", "初始化失败"],
+  ["question_load_success", "题目加载成功"],
+  ["question_load_fail", "题目加载失败"],
+  ["question_audio_fail", "题目音频失败"],
+  ["camera_init_fail", "相机初始化失败"],
+  ["camera_start_fail", "录制启动失败"],
+  ["camera_stop_unexpected", "录制异常停止"],
+  ["record_start_success", "录制启动成功"],
+  ["record_stop_success", "录制停止成功"],
+  ["record_stop_fail", "录制停止失败"],
+  ["record_stop_timeout", "录制停止超时"],
+  ["upload_credential_fail", "上传凭证失败"],
+  ["upload_fail", "上传失败"],
+  ["submit_success", "答题提交成功"],
+  ["submit_fail", "答题提交失败"],
+  ["unexpected_hide", "页面异常隐藏"],
+  ["interrupt_check", "中断检查"],
+  ["interrupt_continue", "中断继续"],
+  ["auto_submit", "自动提交"],
+  ["back_blocked", "返回阻断"],
+  ["evaluation_submit", "评价提交"],
+] as const;
+
 /** 事件码中文文案字典。 */
 const traceEventCodeLabelMap = new Map<string, string>([
   ...traceStageLabelMap,
-  ["interrupt_check", "中断检测"],
-  ["auth_redirect", "鉴权重定向"],
-  ["flow_leave", "离开答题链路"],
+  ...interviewTelemetryEventCodeLabelEntries,
 ]);
 
 /** 当前支持筛选的全部埋点事件码。 */

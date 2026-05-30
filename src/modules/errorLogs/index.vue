@@ -3,17 +3,11 @@
   <!-- 错误日志页面容器 -->
   <section class="error-log-page">
     <!-- 页面标题区 -->
-    <PageHeader description="基于 fail 与 warning 埋点查看错误信息，筛选为空时查询全部。" title="错误日志" />
+    <PageHeader description="基于后端条件筛选查看 fail 与 warning 埋点错误信息。" title="错误日志" />
 
     <!-- 查询条件区 -->
     <ErrorLogSearchForm
       v-model:query="flowQueryForm"
-      v-model:result-filter="resultFilter"
-      v-model:device-quick-filter="deviceQuickFilter"
-      v-model:brand-quick-filter="brandQuickFilter"
-      v-model:brand-tags="brandFilterTags"
-      v-model:model-tags="modelFilterTags"
-      v-model:exclude-test-records="isExcludeTestRecords"
       :loading="isLoading"
       @reset="handleReset"
       @search="handleSearch"
@@ -43,56 +37,35 @@ import PageHeader from "@/components/PageHeader.vue";
 import ErrorLogSearchForm from "@/modules/errorLogs/components/ErrorLogSearchForm.vue";
 import ErrorLogTable from "@/modules/errorLogs/components/ErrorLogTable.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
-import type { TraceBrandQuickFilter, TraceDeviceQuickFilter } from "@/utils/trace";
-import { filterErrorEvents, toClientTimeDescEventItems } from "@/utils/trace";
+import { createTodayTraceRange } from "@/utils/date";
+import { toClientTimeDescEventItems } from "@/utils/trace";
 
 /** 创建默认错误日志查询条件。 */
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
   flowId: "",
   interviewCandidateId: "",
   eventCode: "",
+  result: "fail",
   brand: "",
   model: "",
-  startTime: "",
-  endTime: "",
+  ...createTodayTraceRange(),
   pageNum: 1,
   pageSize: 50,
 });
 
 /** 链路查询表单。 */
 const flowQueryForm = ref<TraceFlowQuery>(createDefaultFlowQuery());
-/** 异常结果筛选。 */
-const resultFilter = ref("fail");
-/** 设备类型快捷筛选。 */
-const deviceQuickFilter = ref<TraceDeviceQuickFilter>("");
-/** 品牌快捷筛选。 */
-const brandQuickFilter = ref<TraceBrandQuickFilter>("");
-/** 品牌标签筛选。 */
-const brandFilterTags = ref<string[]>([]);
-/** 机型标签筛选。 */
-const modelFilterTags = ref<string[]>([]);
-/** 是否过滤测试记录。 */
-const isExcludeTestRecords = ref(true);
 /** 原始链路事件列表。 */
 const eventItems = ref<TraceEventItem[]>([]);
+/** 错误日志后端分页总数。 */
+const errorTotal = ref(0);
 /** 页面加载状态。 */
 const isLoading = ref(false);
 /** 事件详情抽屉引用。 */
 const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 
 /** 错误日志列表。 */
-const errorEventItems = computed(() =>
-  toClientTimeDescEventItems(
-    filterErrorEvents(eventItems.value, {
-      resultFilter: resultFilter.value,
-      deviceQuickFilter: deviceQuickFilter.value,
-      brandQuickFilter: brandQuickFilter.value,
-      isExcludeTestRecords: isExcludeTestRecords.value,
-    }),
-  ),
-);
-/** 错误日志总数。 */
-const errorTotal = computed(() => errorEventItems.value.length);
+const errorEventItems = computed(() => toClientTimeDescEventItems(eventItems.value));
 
 /** 查询错误日志。 */
 const handleSearch = async () => {
@@ -100,6 +73,7 @@ const handleSearch = async () => {
   try {
     const flowPageResult = await queryTraceFlow(flowQueryForm.value);
     eventItems.value = flowPageResult.records;
+    errorTotal.value = flowPageResult.total;
   } finally {
     isLoading.value = false;
   }
@@ -108,13 +82,8 @@ const handleSearch = async () => {
 /** 重置查询条件。 */
 const handleReset = () => {
   flowQueryForm.value = createDefaultFlowQuery();
-  resultFilter.value = "";
-  deviceQuickFilter.value = "";
-  brandQuickFilter.value = "";
-  brandFilterTags.value = [];
-  modelFilterTags.value = [];
-  isExcludeTestRecords.value = false;
   eventItems.value = [];
+  errorTotal.value = 0;
 };
 
 /** 切换页码。 */

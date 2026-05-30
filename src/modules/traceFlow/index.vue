@@ -32,6 +32,7 @@ import PageHeader from "@/components/PageHeader.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
 import FlowEventTable from "@/modules/traceFlow/components/FlowEventTable.vue";
 import FlowSearchForm from "@/modules/traceFlow/components/FlowSearchForm.vue";
+import { createTodayTraceRange } from "@/utils/date";
 import { toClientTimeDescEventItems } from "@/utils/trace";
 
 /** 创建默认链路查询条件。 */
@@ -44,8 +45,7 @@ const createDefaultFlowQuery = (): TraceFlowQuery => ({
   durationMs: undefined,
   brand: "",
   model: "",
-  startTime: "",
-  endTime: "",
+  ...createTodayTraceRange(),
   pageRoute: "",
   pageNum: 1,
   pageSize: 50,
