@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 
 import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
 import { TRACE_DATE_FORMAT, TRACE_DATE_TIME_FORMAT } from "@/utils/date";
+import { formatDeviceModelDisplay } from "@/utils/deviceModel";
 
 /** 埋点聚合汇总结果。 */
 export interface TraceMetricSummary {
@@ -477,7 +478,7 @@ export const toClientTimeDescEventItems = (eventItems: TraceEventItem[]) =>
     return rightClientTimeValue - leftClientTimeValue;
   });
 
-/** 格式化终端型号，展示品牌与型号拼接值。 */
+/** 格式化终端型号，优先展示机型名称并保留原始型号代码。 */
 export const formatTraceTerminalModel = (deviceInfo: unknown) => {
   /** 解析后的设备信息。 */
   const resolvedDeviceInfo = resolveTraceDeviceInfo(deviceInfo);
@@ -490,7 +491,7 @@ export const formatTraceTerminalModel = (deviceInfo: unknown) => {
   /** 终端型号。 */
   const model = formatTraceDeviceField(resolvedDeviceInfo.model);
   /** 终端型号展示文本。 */
-  const terminalModel = `${brand}-${model}`;
+  const terminalModel = formatDeviceModelDisplay(brand, model);
 
   return terminalModel || "-";
 };

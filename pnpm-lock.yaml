@@ -66,6 +66,9 @@ importers:
       '@vue/tsconfig':
         specifier: ^0.8.1
         version: 0.8.1(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3))
+      device-detector-js:
+        specifier: ^3.0.3
+        version: 3.0.3
       eslint:
         specifier: ^9.39.1
         version: 9.39.4
@@ -1042,6 +1045,10 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  device-detector-js@3.0.3:
+    resolution: {integrity: sha512-jM89LJAvP6uOd84at8OlD9dWP8KeYCCHUde0RT0HQo/stdoRH4b54Xl/fntx2nEXCmqiFhmo+/cJetS2VGUHPw==}
+    engines: {node: '>= 8.11.4'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2809,6 +2816,8 @@ snapshots:
 
   detect-libc@2.1.2:
     optional: true
+
+  device-detector-js@3.0.3: {}
 
   dunder-proto@1.0.1:
     dependencies:

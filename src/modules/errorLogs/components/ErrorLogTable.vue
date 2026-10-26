@@ -26,7 +26,7 @@
           {{ formatTraceEventCode(row.eventCode) }}
         </template>
       </el-table-column>
-      <el-table-column label="终端型号" min-width="160" show-overflow-tooltip>
+      <el-table-column label="终端型号" min-width="220" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 终端型号 -->
           {{ formatTraceTerminalModel(row.deviceInfo) }}
