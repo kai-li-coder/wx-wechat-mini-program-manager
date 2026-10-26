@@ -10,6 +10,10 @@ coverage/
 .eslintrc-auto-import.json
 src/components.d.ts
 
+# WorkBuddy 工作区数据（本机记忆与项目约定记录，仅本地使用，不纳入版本管理）
+.workbuddy/
+.workbuddy-ai/
+
 # 本地环境文件。
 .env.local
 .env.*.local

@@ -67,7 +67,8 @@ const apiBase = resolveApiBase();
 /** Axios 实例。 */
 const httpClient = axios.create({
   baseURL: apiBase,
-  timeout: 15_000,
+  // 接口请求超时时间：3 分钟
+  timeout: 180_000,
   headers: {
     "Content-Type": "application/json",
   },
