@@ -4,16 +4,15 @@
   <el-card v-loading="loading" class="candidate-trend-chart" shadow="never">
     <template #header>
       <!-- 图表标题栏 -->
-      <div class="candidate-trend-chart__header">
-        <span>候选人趋势</span>
-        <div class="candidate-trend-chart__actions">
-          <el-tag effect="plain">{{ trendGranularityText }}</el-tag>
+      <PanelHeader subtitle="按当前聚合粒度统计去重候选人数" title="候选人趋势">
+        <template #extra>
+          <span class="meta-chip">{{ trendGranularityText }}</span>
           <el-radio-group v-model="chartMode" size="small">
             <el-radio-button value="line">折线图</el-radio-button>
             <el-radio-button value="bar">柱状图</el-radio-button>
           </el-radio-group>
-        </div>
-      </div>
+        </template>
+      </PanelHeader>
     </template>
 
     <!-- 图表内容区 -->
@@ -22,11 +21,10 @@
       <div ref="chartRoot" class="candidate-trend-chart__canvas" />
 
       <!-- 空数据提示 -->
-      <el-empty
+      <EmptyState
         v-if="!hasCandidateTrendData"
-        :image-size="72"
         class="candidate-trend-chart__empty"
-        description="暂无候选人数据"
+        description="当前筛选条件下没有候选人记录"
       />
     </div>
   </el-card>
@@ -39,6 +37,18 @@ import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 
 import type { TraceDashboardCandidateTrend, TraceDashboardGranularity } from "@/api/trace";
+import EmptyState from "@/components/EmptyState.vue";
+import PanelHeader from "@/components/PanelHeader.vue";
+import {
+  chartAxisLabel,
+  chartAxisLine,
+  chartAxisPointer,
+  chartColors,
+  chartFontFamily,
+  chartSplitLine,
+  chartTooltip,
+  prefersReducedMotion,
+} from "@/constants/chartTheme";
 
 echarts.use([GridComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
 
@@ -75,6 +85,21 @@ const hasCandidateTrendData = computed(() =>
 /** 趋势图聚合文案。 */
 const trendGranularityText = computed(() => trendGranularityTextMap[candidateTrend.granularity]);
 
+/** 折线图渐变填充：强调趋势走向，不喧宾夺主。 */
+const lineAreaStyle = {
+  color: {
+    type: "linear",
+    x: 0,
+    y: 0,
+    x2: 0,
+    y2: 1,
+    colorStops: [
+      { offset: 0, color: "rgba(79, 141, 247, 0.18)" },
+      { offset: 1, color: "rgba(79, 141, 247, 0.01)" },
+    ],
+  },
+};
+
 /** 渲染候选人趋势图。 */
 const renderChart = () => {
   if (!chartRootRef.value) {
@@ -86,30 +111,45 @@ const renderChart = () => {
   }
 
   /** 坐标轴标签列表。 */
-  const axisLabels = candidateTrendRows.value.map((candidateTrendRow) => candidateTrendRow.label || candidateTrendRow.bucket);
+  const axisLabels = candidateTrendRows.value.map(
+    (candidateTrendRow) => candidateTrendRow.label || candidateTrendRow.bucket,
+  );
+  /** 是否为折线图。 */
+  const isLineMode = chartMode.value === "line";
 
   chartInstance.clear();
   chartInstance.setOption({
-    color: ["#2563eb"],
-    tooltip: { trigger: "axis" },
-    grid: { top: 24, right: 16, bottom: 32, left: 40 },
+    animation: !prefersReducedMotion(),
+    color: [chartColors.accent],
+    textStyle: { fontFamily: chartFontFamily },
+    tooltip: { axisPointer: chartAxisPointer, trigger: "axis", ...chartTooltip },
+    grid: { top: 18, right: 8, bottom: 4, left: 4, containLabel: true },
     xAxis: {
       type: "category",
       data: axisLabels,
+      axisLabel: chartAxisLabel,
+      axisLine: chartAxisLine,
       axisTick: { show: false },
     },
     yAxis: {
       type: "value",
       minInterval: 1,
-      splitLine: { lineStyle: { color: "#e5e7eb" } },
+      axisLabel: chartAxisLabel,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: chartSplitLine,
     },
     series: [
       {
         name: "候选人数",
         type: chartMode.value,
-        barMaxWidth: 28,
-        smooth: chartMode.value === "line",
-        symbolSize: chartMode.value === "line" ? 6 : 0,
+        barMaxWidth: 22,
+        smooth: isLineMode,
+        showSymbol: false,
+        symbolSize: 6,
+        lineStyle: { width: 2, color: chartColors.accent },
+        itemStyle: { color: chartColors.accent, borderRadius: isLineMode ? 0 : [6, 6, 0, 0] },
+        areaStyle: isLineMode ? lineAreaStyle : undefined,
         data: candidateTrendRows.value.map((candidateTrendRow) => candidateTrendRow.candidateCount),
       },
     ],
@@ -134,26 +174,7 @@ tryOnUnmounted(() => {
 
 <style scoped lang="scss">
 .candidate-trend-chart {
-  border-radius: 8px;
-}
-
-.candidate-trend-chart__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: $color-text-primary;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.candidate-trend-chart__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+  border-radius: $radius-md;
 }
 
 .candidate-trend-chart__body {
@@ -169,6 +190,17 @@ tryOnUnmounted(() => {
 .candidate-trend-chart__empty {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(2px);
+}
+
+@include screen-sm {
+  .candidate-trend-chart__body {
+    min-height: 260px;
+  }
+
+  .candidate-trend-chart__canvas {
+    height: 260px;
+  }
 }
 </style>

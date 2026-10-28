@@ -1,7 +1,7 @@
 <!-- 埋点总览页面 -->
 <template>
   <!-- 埋点总览页面容器 -->
-  <section class="dashboard-page">
+  <section class="dashboard-page page-stagger">
     <!-- 页面标题区 -->
     <PageHeader description="查看答题异常趋势、涉及链路和事件码分布。" title="埋点总览">
       <template #extra>
@@ -10,7 +10,12 @@
     </PageHeader>
 
     <!-- 查询条件区 -->
-    <MetricSearchForm v-model="dashboardQueryForm" :loading="isLoading" @reset="handleReset" @search="handleSearch" />
+    <MetricSearchForm
+      v-model="dashboardQueryForm"
+      :loading="isLoading"
+      @reset="handleReset"
+      @search="handleSearch"
+    />
 
     <!-- 指标汇总区 -->
     <MetricSummary :summary="dashboardSummary" />
@@ -25,7 +30,10 @@
 
       <!-- 右侧分析区 -->
       <div class="dashboard-page__analysis">
-        <TopErrorEventCodeChart :loading="isLoading" :top-error-event-codes="dashboardData.topErrorEventCodes" />
+        <TopErrorEventCodeChart
+          :loading="isLoading"
+          :top-error-event-codes="dashboardData.topErrorEventCodes"
+        />
         <ErrorWarningPanel :loading="isLoading" :summary="dashboardData.errorWarning" />
       </div>
     </div>
@@ -33,7 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import type { TraceDashboardQuery, TraceDashboardResponse, TraceDashboardWarningThresholds } from "@/api/trace";
+import type {
+  TraceDashboardQuery,
+  TraceDashboardResponse,
+  TraceDashboardWarningThresholds,
+} from "@/api/trace";
 import { queryTraceDashboard } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
 import { normalizeDashboardHourBuckets } from "@/modules/dashboard/composables/useDashboardHourBuckets";
@@ -134,7 +146,10 @@ const handleSearch = async () => {
   try {
     /** 后端聚合后的总览数据。 */
     const dashboardResponse = await queryTraceDashboard(dashboardQueryForm.value);
-    dashboardData.value = normalizeDashboardHourBuckets(dashboardResponse, dashboardQueryForm.value);
+    dashboardData.value = normalizeDashboardHourBuckets(
+      dashboardResponse,
+      dashboardQueryForm.value,
+    );
   } finally {
     isLoading.value = false;
   }
@@ -154,8 +169,8 @@ tryOnMounted(() => {
 <style scoped lang="scss">
 .dashboard-page__content {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(360px, 0.75fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.75fr);
+  gap: $space-5;
 }
 
 .dashboard-page__main-charts,
@@ -163,12 +178,20 @@ tryOnMounted(() => {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 16px;
+  gap: $space-5;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1240px) {
   .dashboard-page__content {
     grid-template-columns: 1fr;
+  }
+}
+
+@include screen-sm {
+  .dashboard-page__content,
+  .dashboard-page__main-charts,
+  .dashboard-page__analysis {
+    gap: $space-3;
   }
 }
 </style>

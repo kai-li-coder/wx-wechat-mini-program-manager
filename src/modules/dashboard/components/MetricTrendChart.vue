@@ -4,10 +4,11 @@
   <el-card v-loading="loading" class="chart-card" shadow="never">
     <template #header>
       <!-- 图表标题栏 -->
-      <div class="chart-card__header">
-        <span>异常趋势</span>
-        <el-tag effect="plain">{{ trendGranularityText }}</el-tag>
-      </div>
+      <PanelHeader subtitle="失败与警告堆叠显示，成功为独立折线" title="异常趋势">
+        <template #extra>
+          <span class="meta-chip">{{ trendGranularityText }}</span>
+        </template>
+      </PanelHeader>
     </template>
 
     <!-- 图表容器 -->
@@ -22,8 +23,27 @@ import { BarChart, LineChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 
 import type { TraceDashboardGranularity, TraceDashboardTrend } from "@/api/trace";
+import PanelHeader from "@/components/PanelHeader.vue";
+import {
+  chartAxisLabel,
+  chartAxisLine,
+  chartAxisPointer,
+  chartColors,
+  chartFontFamily,
+  chartLegend,
+  chartSplitLine,
+  chartTooltip,
+  prefersReducedMotion,
+} from "@/constants/chartTheme";
 
-echarts.use([GridComponent, LegendComponent, TooltipComponent, BarChart, LineChart, CanvasRenderer]);
+echarts.use([
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  BarChart,
+  LineChart,
+  CanvasRenderer,
+]);
 
 const { trend, loading = false } = defineProps<{
   /** 后端聚合后的异常趋势数据。 */
@@ -59,32 +79,55 @@ const renderChart = () => {
   }
 
   chartInstance.setOption({
-    color: ["#ef4444", "#f59e0b", "#10b981"],
-    tooltip: { trigger: "axis" },
-    legend: { top: 0, right: 8 },
-    grid: { top: 44, right: 16, bottom: 32, left: 40 },
+    animation: !prefersReducedMotion(),
+    color: [chartColors.fail, chartColors.warning, chartColors.success],
+    textStyle: { fontFamily: chartFontFamily },
+    tooltip: { axisPointer: chartAxisPointer, trigger: "axis", ...chartTooltip },
+    legend: { ...chartLegend, top: 0, right: 0 },
+    grid: { top: 46, right: 8, bottom: 4, left: 4, containLabel: true },
     xAxis: {
       type: "category",
       data: trendRows.value.map((trendRow) => trendRow.label || trendRow.bucket),
+      axisLabel: chartAxisLabel,
+      axisLine: chartAxisLine,
       axisTick: { show: false },
     },
     yAxis: {
       type: "value",
       minInterval: 1,
-      splitLine: { lineStyle: { color: "#e5e7eb" } },
+      axisLabel: chartAxisLabel,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: chartSplitLine,
     },
     series: [
-      { name: "失败", type: "bar", stack: "total", data: trendRows.value.map((trendRow) => trendRow.failCount) },
+      {
+        name: "失败",
+        type: "bar",
+        stack: "total",
+        barMaxWidth: 18,
+        itemStyle: { color: chartColors.fail },
+        emphasis: { focus: "series" },
+        data: trendRows.value.map((trendRow) => trendRow.failCount),
+      },
       {
         name: "警告",
         type: "bar",
         stack: "total",
+        barMaxWidth: 18,
+        itemStyle: { color: chartColors.warning },
+        emphasis: { focus: "series" },
         data: trendRows.value.map((trendRow) => trendRow.warningCount),
       },
       {
         name: "成功",
         type: "line",
         smooth: true,
+        showSymbol: false,
+        symbolSize: 6,
+        lineStyle: { width: 2, color: chartColors.success },
+        itemStyle: { color: chartColors.success },
+        emphasis: { focus: "series" },
         data: trendRows.value.map((trendRow) => trendRow.successCount),
       },
     ],
@@ -109,20 +152,17 @@ tryOnUnmounted(() => {
 
 <style scoped lang="scss">
 .chart-card {
-  border-radius: 8px;
-}
-
-.chart-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: $color-text-primary;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: $radius-md;
 }
 
 .chart-card__body {
   width: 100%;
   height: 320px;
+}
+
+@include screen-sm {
+  .chart-card__body {
+    height: 260px;
+  }
 }
 </style>

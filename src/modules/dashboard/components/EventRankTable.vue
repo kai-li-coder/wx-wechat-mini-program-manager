@@ -4,11 +4,15 @@
   <el-card class="rank-card" shadow="never">
     <template #header>
       <!-- 表格标题栏 -->
-      <div class="rank-card__header">事件码排行</div>
+      <PanelHeader subtitle="按事件数排序" title="事件码排行" />
     </template>
 
     <!-- 排行表格 -->
-    <el-table :data="rankItems" empty-text="暂无排行数据">
+    <el-table :data="rankItems">
+      <template #empty>
+        <EmptyState description="当前筛选条件下没有事件码排行" />
+      </template>
+
       <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 事件码中文文案 -->
@@ -23,6 +27,8 @@
 </template>
 
 <script setup lang="ts">
+import EmptyState from "@/components/EmptyState.vue";
+import PanelHeader from "@/components/PanelHeader.vue";
 import { formatTraceEventCode, type TraceEventRankItem } from "@/utils/trace";
 
 defineProps<{
@@ -33,12 +39,6 @@ defineProps<{
 
 <style scoped lang="scss">
 .rank-card {
-  border-radius: 8px;
-}
-
-.rank-card__header {
-  color: $color-text-primary;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: $radius-md;
 }
 </style>

@@ -2,7 +2,7 @@
 <template>
   <!-- 错误日志筛选表单区域 -->
   <el-card class="query-card" shadow="never">
-    <el-form :model="queryForm" class="query-form query-form--fixed-columns" label-width="108px">
+    <el-form :model="queryForm" class="query-form query-form--fixed-columns" label-width="92px">
       <!-- FlowId 筛选 -->
       <el-form-item label="Flow ID">
         <el-input v-model.trim="queryForm.flowId" clearable placeholder="留空查询全部链路" />
@@ -10,7 +10,11 @@
 
       <!-- 候选人 ID 筛选 -->
       <el-form-item label="候选人 ID">
-        <el-input v-model.trim="queryForm.interviewCandidateId" clearable placeholder="留空查询全部候选人" />
+        <el-input
+          v-model.trim="queryForm.interviewCandidateId"
+          clearable
+          placeholder="留空查询全部候选人"
+        />
       </el-form-item>
 
       <!-- 事件码筛选 -->

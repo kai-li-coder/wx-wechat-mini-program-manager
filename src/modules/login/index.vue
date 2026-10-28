@@ -1,20 +1,38 @@
-<!-- 管理端账号密码登录页面 -->
+<!-- 管理端账号密码登录页面：浅色画布 + 白色圆角登录卡片 -->
 <template>
   <!-- 登录页面容器 -->
   <main class="login-page">
-    <!-- 登录品牌区域 -->
-    <section class="login-page__brand">
-      <div class="login-page__logo">埋</div>
-      <h1 class="login-page__title">Trace Admin</h1>
-      <p class="login-page__subtitle">招人More微信小程序埋点检测系统</p>
-    </section>
+    <!-- 背景光晕：绿色与蓝色各一枚，低透明度大范围模糊 -->
+    <span class="login-page__glow login-page__glow--green" aria-hidden="true" />
+    <span class="login-page__glow login-page__glow--blue" aria-hidden="true" />
 
-    <!-- 登录表单区域 -->
+    <!-- 登录面板 -->
     <section class="login-page__panel">
-      <div class="login-page__panel-header">
-        <h2 class="login-page__panel-title">登录</h2>
-      </div>
+      <!-- 品牌标识 -->
+      <header class="login-page__brand">
+        <span class="login-page__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M2 12h4l3-7 4 14 3-7h6"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+            />
+          </svg>
+        </span>
+        <div class="login-page__brand-text">
+          <span class="login-page__brand-title">TRACE ADMIN</span>
+          <span class="login-page__brand-sub">链路观测台</span>
+        </div>
+      </header>
 
+      <!-- 标题区 -->
+      <span class="login-page__eyebrow">ADMIN ACCESS</span>
+      <h1 class="login-page__title">登录控制台</h1>
+      <p class="login-page__desc">使用管理端账号登录</p>
+
+      <!-- 登录表单 -->
       <el-form
         ref="loginFormRef"
         :model="loginForm"
@@ -26,7 +44,12 @@
       >
         <!-- 账号输入框 -->
         <el-form-item label="账号" prop="account">
-          <el-input v-model.trim="loginForm.account" :prefix-icon="User" autocomplete="username" placeholder="请输入账号" />
+          <el-input
+            v-model.trim="loginForm.account"
+            :prefix-icon="User"
+            autocomplete="username"
+            placeholder="请输入账号"
+          />
         </el-form-item>
 
         <!-- 密码输入框 -->
@@ -42,10 +65,18 @@
         </el-form-item>
 
         <!-- 登录提交按钮 -->
-        <el-button class="login-page__submit" :loading="isSubmitting" type="primary" @click="handleLogin">
+        <el-button
+          class="login-page__submit"
+          :loading="isSubmitting"
+          type="primary"
+          @click="handleLogin"
+        >
           登录
         </el-button>
       </el-form>
+
+      <!-- 底部标识 -->
+      <p class="login-page__foot">招人More 埋点检测 · 管理端</p>
     </section>
   </main>
 </template>
@@ -116,107 +147,171 @@ const handleLogin = async () => {
 
 <style scoped lang="scss">
 .login-page {
-  display: grid;
+  position: relative;
+  display: flex;
   min-height: 100vh;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
-  background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(20, 184, 166, 0.08) 42%, rgba(245, 158, 11, 0.08)),
-    $color-background;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 48px 24px;
+  background: $color-background;
+}
+
+/* 大范围模糊光晕，替代纯色平铺，保持参考图的轻盈氛围 */
+.login-page__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.login-page__glow--green {
+  top: -180px;
+  right: -100px;
+  width: 520px;
+  height: 520px;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+.login-page__glow--blue {
+  bottom: -200px;
+  left: -120px;
+  width: 480px;
+  height: 480px;
+  background: rgba(79, 141, 247, 0.16);
+}
+
+.login-page__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  border: 1px solid #eff2f8;
+  border-radius: $radius-lg;
+  background: $color-surface;
+  box-shadow: $shadow-overlay;
+  animation: page-rise $dur-slow $ease-out both;
 }
 
 .login-page__brand {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 56px;
-  border-right: 1px solid rgba(229, 231, 235, 0.72);
-  background: #ffffff;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: $space-6;
+  border-bottom: 1px solid $color-border-soft;
 }
 
-.login-page__logo {
+.login-page__mark {
   display: grid;
-  width: 56px;
-  height: 56px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #14b8a6);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 800;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.28);
+  color: #ffffff;
+}
+
+.login-page__mark svg {
+  width: 20px;
+  height: 20px;
+}
+
+.login-page__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.login-page__brand-title {
+  color: $color-text-primary;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 18px;
+}
+
+.login-page__brand-sub {
+  color: $color-text-muted;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.login-page__eyebrow {
+  display: block;
+  margin-top: $space-6;
+  color: $color-accent-strong;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 
 .login-page__title {
-  margin: 28px 0 8px;
+  margin-top: 6px;
   color: $color-text-primary;
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 42px;
-}
-
-.login-page__subtitle {
-  margin: 0;
-  color: $color-text-secondary;
-  font-size: 15px;
-  line-height: 24px;
-}
-
-.login-page__panel {
-  align-self: center;
-  width: min(420px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 32px;
-  border: 1px solid $color-border;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: $shadow-panel;
-}
-
-.login-page__panel-header {
-  margin-bottom: 24px;
-}
-
-.login-page__panel-title {
-  margin: 0;
-  color: $color-text-primary;
-  font-size: 22px;
+  font-size: $font-size-2xl;
   font-weight: 700;
-  line-height: 30px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.login-page__desc {
+  margin-top: 4px;
+  color: $color-text-muted;
+  font-size: $font-size-base;
 }
 
 .login-page__form {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  margin-top: $space-5;
+}
+
+.login-page__form :deep(.el-form-item__label) {
+  height: auto;
+  padding-bottom: 6px;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  line-height: 18px;
 }
 
 .login-page__submit {
   width: 100%;
-  margin-top: 8px;
+  height: 44px;
+  margin-top: $space-2;
+  border-radius: 12px;
+  font-size: $font-size-md;
+  letter-spacing: 0.06em;
 }
 
-@media (max-width: 860px) {
+.login-page__foot {
+  margin-top: $space-6;
+  padding-top: $space-4;
+  border-top: 1px solid $color-border-soft;
+  color: $color-text-muted;
+  font-size: 10.5px;
+  text-align: center;
+}
+
+@include screen-sm {
   .login-page {
-    display: flex;
-    min-height: 100vh;
-    flex-direction: column;
+    padding: $space-5 $space-4;
   }
 
-  .login-page__brand {
-    padding: 32px 24px 16px;
-    border-right: 0;
-    background: transparent;
-  }
-
-  .login-page__title {
-    margin-top: 18px;
-    font-size: 28px;
-    line-height: 36px;
+  .login-page__glow {
+    filter: blur(64px);
   }
 
   .login-page__panel {
-    width: calc(100% - 32px);
-    margin: 20px auto 32px;
-    padding: 24px;
+    padding: 28px 22px;
+    border-radius: $radius-md;
+  }
+
+  .login-page__title {
+    font-size: $font-size-xl;
   }
 }
 </style>

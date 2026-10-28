@@ -1,8 +1,164 @@
-// 管理端样式变量。
-$color-background: #f5f7fb;
+// 设计令牌：颜色、字体、间距、圆角、阴影、动效与布局尺寸。
+// 该文件由 Vite 注入到所有 SCSS 中，只允许声明变量与 mixin，禁止输出任何选择器。
+
+/* ---------- 画布与表面 ---------- */
+// 参考设计：浅薰衣草画布 + 纯白卡片 + 白色侧边栏
+$color-background: #edf1f8;
 $color-surface: #ffffff;
-$color-border: #e5e7eb;
-$color-text-primary: #111827;
-$color-text-secondary: #6b7280;
-$color-text-muted: #9ca3af;
-$shadow-panel: 0 10px 30px rgba(15, 23, 42, 0.06);
+$color-surface-subtle: #f5f7fc;
+$color-surface-sunken: #e9edf6;
+$color-ink: #1e2433;
+$color-ink-raised: #262d40;
+$color-sidebar: #ffffff;
+$color-sidebar-raised: #f7f9fc;
+
+/* ---------- 文本 ---------- */
+$color-text-primary: #1e2433;
+$color-text-secondary: #5f6879;
+$color-text-muted: #6f7789;
+$color-text-placeholder: #8a93a6;
+$color-text-inverse: #ffffff;
+$color-text-on-sidebar: #5f6879;
+$color-text-on-sidebar-dim: #6f7789;
+
+/* ---------- 线条 ---------- */
+$color-border: #e8ecf5;
+$color-border-soft: #f1f4fa;
+$color-border-strong: #dde3ef;
+$color-control-border: #e8ecf5;
+$color-border-on-ink: #eef1f8;
+
+/* ---------- 主色与状态色 ---------- */
+// 主色取参考图的亮绿；实底按钮使用略深的绿确保白字可读
+$color-accent: #16a34a;
+$color-accent-strong: #15803d;
+$color-accent-active: #166534;
+$color-accent-soft: #e9fbf1;
+$color-accent-line: #4ade80;
+$color-success: #15803d;
+$color-success-soft: #e9fbf1;
+$color-warning: #b45309;
+$color-warning-soft: #fef4e6;
+$color-danger: #dc2626;
+$color-danger-soft: #feecec;
+$color-info: #2563eb;
+$color-info-soft: #e8f1fe;
+
+/* ---------- 字体 ---------- */
+// 不引入外部字体 CDN：用本机高质量中文无衬线 + 加重字重还原参考图的几何感
+$font-sans:
+  "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue",
+  sans-serif;
+$font-mono:
+  "JetBrains Mono", "SF Mono", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+
+$font-size-2xs: 10px;
+$font-size-xs: 11px;
+$font-size-sm: 12px;
+$font-size-base: 13px;
+$font-size-md: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-display: 28px;
+$font-size-hero: 36px;
+
+$line-height-tight: 1.2;
+$line-height-base: 1.6;
+$letter-spacing-wide: 0.12em;
+$letter-spacing-label: 0.02em;
+
+/* ---------- 间距梯度 ---------- */
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 20px;
+$space-6: 24px;
+$space-7: 32px;
+$space-8: 40px;
+$space-9: 56px;
+$space-10: 72px;
+
+/* ---------- 圆角 ---------- */
+// 参考图：卡片约 16px，按钮/输入框 10px，标签 8px，登录面板 20px
+$radius-xs: 8px;
+$radius-sm: 10px;
+$radius-md: 16px;
+$radius-lg: 20px;
+$radius-pill: 999px;
+
+/* ---------- 阴影（柔和、带冷色环境光） ---------- */
+$shadow-panel: 0 6px 20px rgba(23, 32, 56, 0.05);
+$shadow-raised: 0 12px 32px rgba(23, 32, 56, 0.09);
+$shadow-overlay: 0 24px 64px rgba(23, 32, 56, 0.14);
+
+/* ---------- 动效 ---------- */
+$ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+$dur-fast: 160ms;
+$dur-base: 260ms;
+$dur-slow: 480ms;
+
+/* ---------- 布局尺寸 ---------- */
+$layout-sidebar-width: 236px;
+$layout-sidebar-collapsed: 76px;
+$layout-header-height: 64px;
+$layout-content-max: 1600px;
+
+/* ---------- Element Plus 语义色映射 ---------- */
+$element-color-map: (
+  primary: $color-accent,
+  success: $color-success,
+  warning: #d97706,
+  danger: $color-danger,
+  error: $color-danger,
+  info: $color-info,
+);
+
+/* ---------- 通用 mixin ---------- */
+// 面板表面：统一卡片边界与底色
+@mixin panel-surface {
+  border: 1px solid $color-border-soft;
+  border-radius: $radius-md;
+  background: $color-surface;
+  box-shadow: $shadow-panel;
+}
+
+// 微标签：大写 + 宽字距，用于分区标题与英文短标识
+@mixin text-micro {
+  font-family: $font-sans;
+  font-size: $font-size-2xs;
+  font-weight: 600;
+  letter-spacing: $letter-spacing-wide;
+  text-transform: uppercase;
+}
+
+// 键盘焦点环
+@mixin focus-ring {
+  outline: 2px solid rgba(22, 163, 74, 0.55);
+  outline-offset: 2px;
+}
+
+@mixin screen-lg {
+  @media (max-width: 1280px) {
+    @content;
+  }
+}
+
+@mixin screen-md {
+  @media (max-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin screen-sm {
+  @media (max-width: 768px) {
+    @content;
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}

@@ -1,9 +1,12 @@
 <!-- 错误日志页面 -->
 <template>
   <!-- 错误日志页面容器 -->
-  <section class="error-log-page">
+  <section class="error-log-page page-stagger">
     <!-- 页面标题区 -->
-    <PageHeader description="基于后端条件筛选查看 fail 与 warning 埋点错误信息。" title="错误日志" />
+    <PageHeader
+      description="基于后端条件筛选查看 fail 与 warning 埋点错误信息。"
+      title="错误日志"
+    />
 
     <!-- 查询条件区 -->
     <ErrorLogSearchForm
@@ -62,7 +65,8 @@ const errorTotal = ref(0);
 /** 页面加载状态。 */
 const isLoading = ref(false);
 /** 事件详情抽屉引用。 */
-const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
+const eventDetailDrawerRef =
+  useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 
 /** 错误日志列表。 */
 const errorEventItems = computed(() => toClientTimeDescEventItems(eventItems.value));

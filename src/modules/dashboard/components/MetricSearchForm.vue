@@ -2,7 +2,7 @@
 <template>
   <!-- 筛选表单区域 -->
   <el-card class="query-card" shadow="never">
-    <el-form :model="queryForm" class="query-form" label-width="84px">
+    <el-form :model="queryForm" class="query-form" label-width="76px">
       <!-- 时间范围筛选 -->
       <el-form-item class="query-form__range" label="时间范围">
         <el-date-picker

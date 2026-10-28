@@ -1,65 +1,85 @@
-<!-- 错误预警面板组件 -->
+<!-- 错误预警面板组件：等级状态带、关键指标与阈值口径 -->
 <template>
   <!-- 错误预警卡片 -->
-  <el-card v-loading="loading" :class="['error-warning-panel', `error-warning-panel--${summary.level}`]" shadow="never">
+  <el-card v-loading="loading" class="error-warning-panel" shadow="never">
     <template #header>
       <!-- 面板标题栏 -->
-      <div class="error-warning-panel__header">
-        <span>错误预警</span>
-        <el-tag :type="levelTagType" effect="dark">{{ levelText }}</el-tag>
-      </div>
+      <PanelHeader subtitle="按错误占比与影响范围分级" title="错误预警">
+        <template #extra>
+          <span :class="['level-chip', `level-chip--${summary.level}`]">
+            <i class="level-chip__dot" aria-hidden="true" />
+            {{ levelText }}
+          </span>
+        </template>
+      </PanelHeader>
     </template>
 
     <!-- 空数据提示 -->
-    <el-empty
-      v-if="!hasWarningData"
-      :image-size="72"
-      class="error-warning-panel__empty"
-      description="暂无可评估数据"
-    />
+    <EmptyState v-if="!hasWarningData" description="当前筛选条件下没有可评估的埋点数据" />
 
     <!-- 预警内容区 -->
     <div v-else class="error-warning-panel__body">
       <!-- 预警状态区 -->
-      <div class="error-warning-panel__status">
-        <strong>{{ levelDescription }}</strong>
-        <span>{{ warningDateText }} 统计结果</span>
+      <div :class="['warning-status', `warning-status--${summary.level}`]">
+        <span class="warning-status__marker" aria-hidden="true" />
+        <div class="warning-status__text">
+          <strong>{{ levelDescription }}</strong>
+          <span>{{ warningDateText }} 统计结果</span>
+        </div>
       </div>
 
       <!-- 预警指标区 -->
-      <div class="error-warning-panel__metrics">
-        <div class="error-warning-panel__metric">
-          <span>错误占比</span>
-          <strong>{{ formatRate(summary.failRate) }}</strong>
+      <div class="warning-metrics">
+        <div class="warning-metric">
+          <span class="warning-metric__label">错误占比</span>
+          <strong class="warning-metric__value">{{ formatRate(summary.failRate) }}</strong>
+          <span class="warning-metric__hint">失败 / 全部事件</span>
         </div>
-        <div class="error-warning-panel__metric">
-          <span>失败事件</span>
-          <strong>{{ summary.failCount }}/{{ summary.eventCount }}</strong>
+        <div class="warning-metric">
+          <span class="warning-metric__label">失败事件</span>
+          <strong class="warning-metric__value"
+            >{{ summary.failCount }}/{{ summary.eventCount }}</strong
+          >
+          <span class="warning-metric__hint">当前统计范围</span>
         </div>
-        <div class="error-warning-panel__metric">
-          <span>受影响候选人</span>
-          <strong>{{ summary.affectedCandidateCount }}/{{ summary.candidateCount }}</strong>
+        <div class="warning-metric">
+          <span class="warning-metric__label">受影响候选人</span>
+          <strong class="warning-metric__value"
+            >{{ summary.affectedCandidateCount }}/{{ summary.candidateCount }}</strong
+          >
+          <span class="warning-metric__hint">受影响 / 全部候选人</span>
         </div>
       </div>
 
       <!-- 触发原因区 -->
-      <div class="error-warning-panel__section">
-        <span class="error-warning-panel__section-title">触发原因</span>
-        <ul class="error-warning-panel__reason-list">
-          <li v-for="triggerReason in summary.triggerReasons" :key="triggerReason">{{ triggerReason }}</li>
+      <section class="warning-section">
+        <h3 class="warning-section__title">触发原因</h3>
+        <ul class="warning-reasons">
+          <li v-for="triggerReason in summary.triggerReasons" :key="triggerReason">
+            {{ triggerReason }}
+          </li>
         </ul>
-      </div>
+      </section>
 
       <!-- 阈值说明区 -->
-      <div class="error-warning-panel__thresholds">
-        <span v-for="thresholdText in thresholdTextItems" :key="thresholdText">{{ thresholdText }}</span>
-      </div>
+      <section class="warning-section warning-section--thresholds">
+        <h3 class="warning-section__title">阈值口径</h3>
+        <p
+          v-for="thresholdText in thresholdTextItems"
+          :key="thresholdText"
+          class="warning-threshold"
+        >
+          {{ thresholdText }}
+        </p>
+      </section>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
 import type { TraceDashboardErrorWarning, TraceDashboardErrorWarningLevel } from "@/api/trace";
+import EmptyState from "@/components/EmptyState.vue";
+import PanelHeader from "@/components/PanelHeader.vue";
 
 const { summary, loading = false } = defineProps<{
   /** 错误预警摘要。 */
@@ -82,13 +102,6 @@ const levelDescriptionMap: Record<TraceDashboardErrorWarningLevel, string> = {
   warning: "错误占比达到预警阈值",
   critical: "错误风险达到严重等级",
 };
-/** 预警等级标签类型字典。 */
-const levelTagTypeMap = {
-  normal: "success",
-  watch: "info",
-  warning: "warning",
-  critical: "danger",
-} as const satisfies Record<TraceDashboardErrorWarningLevel, "success" | "info" | "warning" | "danger">;
 
 /** 格式化百分比。 */
 const formatRate = (rate: number) => `${(rate * 100).toFixed(1)}%`;
@@ -101,8 +114,6 @@ const warningDateText = computed(() => summary.warningDate || "未指定日期")
 const levelText = computed(() => levelTextMap[summary.level]);
 /** 预警等级描述。 */
 const levelDescription = computed(() => levelDescriptionMap[summary.level]);
-/** 预警等级标签类型。 */
-const levelTagType = computed(() => levelTagTypeMap[summary.level]);
 /** 预警阈值说明文案。 */
 const thresholdTextItems = computed(() => [
   `观察：错误占比 ≥ ${formatRate(summary.thresholds.watchFailRate)} 且失败事件 ≥ ${summary.thresholds.watchFailCount}`,
@@ -113,127 +124,194 @@ const thresholdTextItems = computed(() => [
 
 <style scoped lang="scss">
 .error-warning-panel {
-  border-radius: 8px;
-}
-
-.error-warning-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: $color-text-primary;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.error-warning-panel__empty {
-  min-height: 248px;
+  border-radius: $radius-md;
 }
 
 .error-warning-panel__body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $space-5;
 }
 
-.error-warning-panel__status {
+/* 状态带：柔和色块 + 状态点，与参考图的浅色卡片一致 */
+.warning-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px $space-4;
+  border: 1px solid transparent;
+  border-radius: $radius-sm;
+  background: $color-surface-subtle;
+}
+
+.warning-status__marker {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $color-text-muted;
+}
+
+.warning-status__text {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid $color-border;
-  border-radius: 8px;
-  background: #f9fafb;
+  gap: 2px;
 }
 
-.error-warning-panel__status strong {
+.warning-status__text strong {
   color: $color-text-primary;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: $font-size-md;
+  font-weight: 600;
+  line-height: 22px;
 }
 
-.error-warning-panel__status span {
-  color: $color-text-secondary;
-  font-size: 13px;
-  line-height: 20px;
+.warning-status__text span {
+  color: $color-text-muted;
+  font-size: $font-size-xs;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
 }
 
-.error-warning-panel__metrics {
+.warning-status--normal {
+  background: $color-success-soft;
+}
+
+.warning-status--normal .warning-status__marker {
+  background: #22c55e;
+}
+
+.warning-status--watch {
+  background: $color-info-soft;
+}
+
+.warning-status--watch .warning-status__marker {
+  background: $color-info;
+}
+
+.warning-status--warning {
+  background: $color-warning-soft;
+}
+
+.warning-status--warning .warning-status__marker {
+  background: #f59e0b;
+}
+
+.warning-status--critical {
+  background: $color-danger-soft;
+}
+
+.warning-status--critical .warning-status__marker {
+  background: #ef4444;
+}
+
+/* 三项关键指标：竖线分隔，避免卡片套卡片 */
+.warning-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  border-top: 1px solid $color-border-soft;
+  border-bottom: 1px solid $color-border-soft;
 }
 
-.error-warning-panel__metric {
+.warning-metric {
+  display: flex;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid $color-border;
-  border-radius: 8px;
+  flex-direction: column;
+  gap: 4px;
+  padding: $space-3 $space-3 $space-3 0;
 }
 
-.error-warning-panel__metric span {
-  display: block;
+.warning-metric + .warning-metric {
+  padding-left: $space-4;
+  border-left: 1px solid $color-border-soft;
+}
+
+.warning-metric__label {
   color: $color-text-secondary;
-  font-size: 12px;
+  font-size: $font-size-xs;
+  line-height: 16px;
+}
+
+.warning-metric__value {
+  color: $color-text-primary;
+  font-size: $font-size-lg;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.warning-metric__hint {
+  color: $color-text-muted;
+  font-size: $font-size-xs;
+  line-height: 16px;
+}
+
+.warning-section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.warning-section__title {
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+  font-weight: 600;
   line-height: 18px;
 }
 
-.error-warning-panel__metric strong {
-  display: block;
-  margin-top: 6px;
-  color: $color-text-primary;
-  font-size: 18px;
-  line-height: 24px;
-}
-
-.error-warning-panel__section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.error-warning-panel__section-title {
-  color: $color-text-primary;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 20px;
-}
-
-.error-warning-panel__reason-list {
+.warning-reasons {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.warning-reasons li {
+  position: relative;
+  padding-left: 14px;
   color: $color-text-secondary;
-  font-size: 13px;
+  font-size: $font-size-sm;
   line-height: 20px;
 }
 
-.error-warning-panel__thresholds {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 12px;
-  border-top: 1px solid $color-border;
+/* 方形标记：与等宽编号同一套几何语言 */
+.warning-reasons li::before {
+  position: absolute;
+  top: 7px;
+  left: 2px;
+  width: 5px;
+  height: 5px;
+  background: $color-warning;
+  content: "";
+}
+
+.warning-section--thresholds {
+  padding-top: $space-3;
+  border-top: 1px solid $color-border-soft;
+}
+
+.warning-threshold {
   color: $color-text-muted;
-  font-size: 12px;
+  font-size: $font-size-xs;
   line-height: 18px;
+  font-variant-numeric: tabular-nums;
 }
 
-.error-warning-panel--warning .error-warning-panel__status {
-  border-color: #f59e0b;
-  background: #fffbeb;
-}
-
-.error-warning-panel--critical .error-warning-panel__status {
-  border-color: #ef4444;
-  background: #fef2f2;
-}
-
-@media (max-width: 768px) {
-  .error-warning-panel__metrics {
+@include screen-sm {
+  .warning-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .warning-metric {
+    padding: $space-3 0;
+  }
+
+  .warning-metric + .warning-metric {
+    padding-left: 0;
+    border-top: 1px solid $color-border-soft;
+    border-left: 0;
   }
 }
 </style>

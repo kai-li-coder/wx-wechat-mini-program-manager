@@ -2,10 +2,30 @@
 <template>
   <!-- 错误日志表格卡片 -->
   <el-card class="table-card" shadow="never">
+    <template #header>
+      <!-- 表格标题栏 -->
+      <PanelHeader title="错误记录">
+        <template #extra>
+          <span class="table-card__count">共 {{ formatCount(total) }} 条</span>
+          <span class="table-card__scope meta-chip">失败 / 警告</span>
+        </template>
+      </PanelHeader>
+    </template>
+
     <!-- 错误日志表格 -->
-    <el-table v-loading="loading" :data="eventItems" empty-text="暂无错误日志" :row-key="resolveTraceEventRowKey">
+    <el-table v-loading="loading" :data="eventItems" :row-key="resolveTraceEventRowKey">
+      <template #empty>
+        <EmptyState description="当前筛选条件下没有错误日志" />
+      </template>
+
       <!-- 序号列 -->
-      <el-table-column :index="resolveTableRowIndex" align="center" label="序号" type="index" width="80" />
+      <el-table-column
+        :index="resolveTableRowIndex"
+        align="center"
+        label="序号"
+        type="index"
+        width="72"
+      />
       <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
         <template #default="{ row }">
           <!-- 客户端时间 -->
@@ -39,7 +59,12 @@
         </template>
       </el-table-column>
       <el-table-column label="Flow ID" min-width="180" prop="flowId" show-overflow-tooltip />
-      <el-table-column label="候选人 ID" min-width="120" prop="interviewCandidateId" show-overflow-tooltip />
+      <el-table-column
+        label="候选人 ID"
+        min-width="120"
+        prop="interviewCandidateId"
+        show-overflow-tooltip
+      />
       <el-table-column fixed="right" label="操作" width="92">
         <template #default="{ row }">
           <!-- 详情按钮 -->
@@ -66,6 +91,8 @@
 
 <script setup lang="ts">
 import type { TraceEventItem } from "@/api/trace";
+import EmptyState from "@/components/EmptyState.vue";
+import PanelHeader from "@/components/PanelHeader.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
 import {
@@ -76,7 +103,13 @@ import {
   resolveTraceEventServerTime,
 } from "@/utils/trace";
 
-const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
+const {
+  eventItems,
+  loading = false,
+  pageNum,
+  pageSize,
+  total,
+} = defineProps<{
   /** 错误日志事件列表。 */
   eventItems: TraceEventItem[];
   /** 表格加载状态。 */
@@ -92,6 +125,12 @@ const { eventItems, loading = false, pageNum, pageSize, total } = defineProps<{
 /** 计算分页后的表格序号。 */
 const resolveTableRowIndex = (rowIndex: number) => (pageNum - 1) * pageSize + rowIndex + 1;
 
+/** 千分位数字格式化器。 */
+const countFormatter = new Intl.NumberFormat("zh-CN");
+
+/** 格式化记录总数。 */
+const formatCount = (countValue: number) => countFormatter.format(countValue);
+
 const emit = defineEmits<{
   /** 查看事件详情。 */
   viewDetail: [eventItem: TraceEventItem];
@@ -104,20 +143,38 @@ const emit = defineEmits<{
 
 <style scoped lang="scss">
 .table-card {
-  margin-top: 16px;
-  border-radius: 8px;
+  margin-top: $space-5;
+  border-radius: $radius-md;
+}
+
+.table-card__count {
+  color: $color-text-muted;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .table-card__pagination {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: $space-4;
+  padding-top: $space-4;
+  border-top: 1px solid $color-border-soft;
+  overflow-x: auto;
 }
 
-@media (max-width: 768px) {
+@include screen-sm {
+  .table-card {
+    margin-top: $space-3;
+  }
+
+  .table-card__scope {
+    display: none;
+  }
+
   .table-card__pagination {
     justify-content: flex-start;
-    overflow-x: auto;
   }
 }
 </style>

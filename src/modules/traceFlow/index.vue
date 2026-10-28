@@ -1,12 +1,20 @@
 <!-- 链路事件查询页面 -->
 <template>
   <!-- 链路事件页面容器 -->
-  <section class="trace-flow-page">
+  <section class="trace-flow-page page-stagger">
     <!-- 页面标题区 -->
-    <PageHeader description="按 Flow ID 或候选人面试 ID 查看事件序列，筛选为空时查询全部。" title="链路事件" />
+    <PageHeader
+      description="按 Flow ID 或候选人面试 ID 查看事件序列，筛选为空时查询全部。"
+      title="链路事件"
+    />
 
     <!-- 查询条件区 -->
-    <FlowSearchForm v-model="flowQueryForm" :loading="isLoading" @reset="handleReset" @search="handleSearch" />
+    <FlowSearchForm
+      v-model="flowQueryForm"
+      :loading="isLoading"
+      @reset="handleReset"
+      @search="handleSearch"
+    />
 
     <!-- 链路事件表格区 -->
     <FlowEventTable
@@ -60,7 +68,8 @@ const total = ref(0);
 /** 页面加载状态。 */
 const isLoading = ref(false);
 /** 事件详情抽屉引用。 */
-const eventDetailDrawerRef = useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
+const eventDetailDrawerRef =
+  useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 /** 按客户端时间倒序展示的链路事件列表。 */
 const clientTimeDescEventItems = computed(() => toClientTimeDescEventItems(eventItems.value));
 
