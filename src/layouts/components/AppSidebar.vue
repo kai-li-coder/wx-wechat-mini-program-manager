@@ -306,12 +306,17 @@ const handleLogout = async () => {
   white-space: nowrap;
 }
 
-/* 退出按钮：浅白文字按钮，通过 CSS 变量适配文字按钮的悬停配色 */
-.app-sidebar__logout {
-  --el-button-text-color: rgba(255, 255, 255, 0.85);
+/* 退出按钮：文字按钮（text 形态）无实体底色，文案与图标统一为纯白，
+   与侧栏用户名、品牌标题等亮色文字保持一致；
+   叠加一层父级选择器提高特异性，避免被全局默认按钮的深灰文字配色压掉；
+   text 形态的悬停/按下底色由 --el-fill-color* 提供，需同步改为半透明白，
+   否则默认浅灰底会让白色文案失去对比 */
+.app-sidebar__foot .app-sidebar__logout {
+  --el-button-text-color: #ffffff;
   --el-button-hover-text-color: #ffffff;
-  --el-button-hover-bg-color: rgba(255, 255, 255, 0.14);
   --el-button-active-text-color: #ffffff;
+  --el-fill-color-light: rgba(255, 255, 255, 0.12);
+  --el-fill-color: rgba(255, 255, 255, 0.18);
 
   flex: 0 0 auto;
   height: 32px;

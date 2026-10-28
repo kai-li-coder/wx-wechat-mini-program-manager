@@ -420,10 +420,11 @@ html {
     padding: 0 16px;
   }
 
-  /* 默认按钮：白底细边，悬停转主色 */
+  /* 默认按钮：白底细边，悬停转主色。
+     排除文字形态（.is-text）：其背景透明，白底深灰文字的配色会压掉深色底（如侧栏）上的浅色文案 */
   .el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
       .el-button--danger
-    ):not(.el-button--info) {
+    ):not(.el-button--info):not(.is-text) {
     --el-button-bg-color: #{$color-surface};
     --el-button-border-color: #e0eaec;
     --el-button-text-color: #4b5b62;
