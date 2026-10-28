@@ -54,6 +54,8 @@
       <section class="event-detail-drawer__section">
         <div class="event-detail-drawer__section-head">
           <h3>设备信息</h3>
+          <span class="event-detail-drawer__section-rule" aria-hidden="true"></span>
+          <CopyButton :text="deviceInfoText" :disabled="!deviceInfoText" />
         </div>
         <JsonViewer :value="eventItem.deviceInfo" />
       </section>
@@ -62,6 +64,8 @@
       <section class="event-detail-drawer__section">
         <div class="event-detail-drawer__section-head">
           <h3>扩展字段</h3>
+          <span class="event-detail-drawer__section-rule" aria-hidden="true"></span>
+          <CopyButton :text="extraText" :disabled="!extraText" />
         </div>
         <JsonViewer :value="eventItem.extra" />
       </section>
@@ -71,9 +75,11 @@
 
 <script setup lang="ts">
 import type { TraceEventItem } from "@/api/trace";
+import CopyButton from "@/components/CopyButton.vue";
 import JsonViewer from "@/components/JsonViewer.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
+import { formatJsonTextForCopy } from "@/utils/json";
 import {
   formatTraceEventCode,
   formatTraceStage,
@@ -87,6 +93,11 @@ const drawerVisible = ref(false);
 const eventItem = ref<TraceEventItem | null>(null);
 /** 当前窗口宽度。 */
 const { width: windowWidth } = useWindowSize();
+
+/** 设备信息复制文本：与 JSON 面板展示保持一致，空数据返回空串以禁用复制。 */
+const deviceInfoText = computed(() => formatJsonTextForCopy(eventItem.value?.deviceInfo));
+/** 扩展字段复制文本。 */
+const extraText = computed(() => formatJsonTextForCopy(eventItem.value?.extra));
 
 /** 抽屉尺寸：移动端占满可视宽度，桌面端保持固定阅读宽度。 */
 const drawerSize = computed(() => (windowWidth.value <= 768 ? "92%" : "560px"));
@@ -148,11 +159,11 @@ defineExpose({ openDialog });
   line-height: 18px;
 }
 
-.event-detail-drawer__section-head::after {
+/* 标题与复制按钮之间的自适应分隔线 */
+.event-detail-drawer__section-rule {
   height: 1px;
   flex: 1;
   background: $color-border-soft;
-  content: "";
 }
 
 @include screen-sm {

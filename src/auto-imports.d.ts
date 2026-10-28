@@ -10,6 +10,8 @@ declare global {
   const watch: typeof import("vue")["watch"];
   /** Vue 模板引用自动导入。 */
   const useTemplateRef: typeof import("vue")["useTemplateRef"];
+  /** Vue 卸载前生命周期自动导入。 */
+  const onBeforeUnmount: typeof import("vue")["onBeforeUnmount"];
   /** Vue Router 当前路由自动导入。 */
   const useRoute: typeof import("vue-router")["useRoute"];
   /** Vue Router 路由实例自动导入。 */

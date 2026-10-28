@@ -13,27 +13,19 @@
 </template>
 
 <script setup lang="ts">
+import { formatJsonText, isJsonValueEmpty } from "@/utils/json";
+
 const { value } = defineProps<{
   /** 待格式化展示的数据。 */
   value: unknown;
 }>();
 
 /** 格式化后的 JSON 文本。 */
-const formattedJsonText = computed(() => {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-});
+const formattedJsonText = computed(() => formatJsonText(value));
 
 /** 内容行数，用于快速判断数据体量。 */
 const lineCount = computed(() =>
-  formattedJsonText.value === "-" ? 0 : formattedJsonText.value.split("\n").length,
+  isJsonValueEmpty(value) ? 0 : formattedJsonText.value.split("\n").length,
 );
 </script>
 

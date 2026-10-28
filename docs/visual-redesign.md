@@ -68,6 +68,7 @@
 
 - 主按钮：绿色实底、白色文字、10px 圆角、`0 6px 16px rgba(22,163,74,.24)` 投影。
 - 次按钮：白底、`#E3E8F2` 边框，悬停转浅绿底 + 绿字。
+- 复制按钮：24px 高、8px 圆角的描边小按钮，与分区标题同一行；悬停与复制成功态统一为浅绿底 + 深绿字，文案在 1.6s 内切换为「已复制」。
 - 输入框：填充式 `#F5F7FC`，无可见描边；聚焦转白底并出现 1px 绿色边 + 4px 绿色光环。
 
 ### 指标卡
@@ -117,7 +118,7 @@
 
 - 令牌与全局样式：`src/styles/tokens.scss`、`src/styles/base.scss`
 - 布局：`src/layouts/AdminLayout.vue`、`AppHeader.vue`、`AppSidebar.vue`
-- 公共组件：`PageHeader.vue`、`PanelHeader.vue`、`EmptyState.vue`、`ResultTag.vue`、`JsonViewer.vue`
+- 公共组件：`PageHeader.vue`、`PanelHeader.vue`、`EmptyState.vue`、`ResultTag.vue`、`JsonViewer.vue`、`CopyButton.vue`
 - 图表：`src/constants/chartTheme.ts` 及三个图表组件
 - 页面：登录、总览、链路事件、错误日志及其子组件
 
