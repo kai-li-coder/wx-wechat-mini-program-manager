@@ -37,7 +37,8 @@ const { title, description = "" } = defineProps<{
 }
 
 .page-header__title {
-  color: $color-text-primary;
+  /* 参考图的分区标题使用青蓝主色，页面大标题同步采用（28px 粗体满足大字对比度要求） */
+  color: $color-accent;
   font-size: $font-size-display;
   font-weight: 700;
   line-height: 1.25;

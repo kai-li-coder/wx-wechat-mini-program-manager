@@ -27,16 +27,16 @@ const { title = "暂无数据", description = "" } = defineProps<{
   text-align: center;
 }
 
-/* 虚线方框 + 横线：不依赖插画资源的空态记号 */
+/* 浅青圆框 + 横线：不依赖插画资源的空态记号，呼应参考图的浅青图标 */
 .empty-state__glyph {
   position: relative;
   display: block;
   width: 48px;
   height: 48px;
   margin-bottom: 4px;
-  border: 1px solid $color-border-soft;
+  border: 1px solid $color-accent-tint;
   border-radius: 50%;
-  background: $color-surface-subtle;
+  background: $color-accent-soft;
 }
 
 .empty-state__glyph::after {
@@ -46,7 +46,7 @@ const { title = "暂无数据", description = "" } = defineProps<{
   width: 14px;
   height: 2px;
   border-radius: 2px;
-  background: #d5dbe7;
+  background: #9ccfd6;
   content: "";
   transform: translate(-50%, -50%);
 }

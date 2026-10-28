@@ -12,66 +12,73 @@
       </PanelHeader>
     </template>
 
-    <!-- 错误日志表格 -->
-    <el-table v-loading="loading" :data="eventItems" :row-key="resolveTraceEventRowKey">
-      <template #empty>
-        <EmptyState description="当前筛选条件下没有错误日志" />
-      </template>
+    <!-- 错误日志表格滚动区：仅表格内容滚动，标题与分页固定 -->
+    <div class="table-card__table-scroll">
+      <el-table v-loading="loading" :data="eventItems" :row-key="resolveTraceEventRowKey">
+        <template #empty>
+          <EmptyState description="当前筛选条件下没有错误日志" />
+        </template>
 
-      <!-- 序号列 -->
-      <el-table-column
-        :index="resolveTableRowIndex"
-        align="center"
-        label="序号"
-        type="index"
-        width="72"
-      />
-      <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
-        <template #default="{ row }">
-          <!-- 客户端时间 -->
-          {{ formatDisplayDateTime(row.clientTime) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="结果" width="96">
-        <template #default="{ row }">
-          <!-- 结果标签 -->
-          <ResultTag :result="resolveTraceEventResult(row)" />
-        </template>
-      </el-table-column>
-      <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
-      <el-table-column label="错误信息" min-width="240" prop="errorMessage" show-overflow-tooltip />
-      <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
-        <template #default="{ row }">
-          <!-- 事件码中文文案 -->
-          {{ formatTraceEventCode(row.eventCode) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="终端型号" min-width="220" show-overflow-tooltip>
-        <template #default="{ row }">
-          <!-- 终端型号 -->
-          {{ formatTraceTerminalModel(row.deviceInfo) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
-        <template #default="{ row }">
-          <!-- 服务端记录时间 -->
-          {{ formatDisplayDateTime(resolveTraceEventServerTime(row)) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="Flow ID" min-width="180" prop="flowId" show-overflow-tooltip />
-      <el-table-column
-        label="候选人 ID"
-        min-width="120"
-        prop="interviewCandidateId"
-        show-overflow-tooltip
-      />
-      <el-table-column fixed="right" label="操作" width="92">
-        <template #default="{ row }">
-          <!-- 详情按钮 -->
-          <el-button link type="primary" @click="emit('viewDetail', row)">详情</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <!-- 序号列 -->
+        <el-table-column
+          :index="resolveTableRowIndex"
+          align="center"
+          label="序号"
+          type="index"
+          width="72"
+        />
+        <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
+          <template #default="{ row }">
+            <!-- 客户端时间 -->
+            {{ formatDisplayDateTime(row.clientTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="结果" width="96">
+          <template #default="{ row }">
+            <!-- 结果标签 -->
+            <ResultTag :result="resolveTraceEventResult(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
+        <el-table-column
+          label="错误信息"
+          min-width="240"
+          prop="errorMessage"
+          show-overflow-tooltip
+        />
+        <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
+          <template #default="{ row }">
+            <!-- 事件码中文文案 -->
+            {{ formatTraceEventCode(row.eventCode) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="终端型号" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <!-- 终端型号 -->
+            {{ formatTraceTerminalModel(row.deviceInfo) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
+          <template #default="{ row }">
+            <!-- 服务端记录时间 -->
+            {{ formatDisplayDateTime(resolveTraceEventServerTime(row)) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="Flow ID" min-width="180" prop="flowId" show-overflow-tooltip />
+        <el-table-column
+          label="候选人 ID"
+          min-width="120"
+          prop="interviewCandidateId"
+          show-overflow-tooltip
+        />
+        <el-table-column fixed="right" label="操作" width="92">
+          <template #default="{ row }">
+            <!-- 详情按钮 -->
+            <el-button link type="primary" @click="emit('viewDetail', row)">详情</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <!-- 错误日志分页 -->
     <div class="table-card__pagination">
@@ -143,8 +150,34 @@ const emit = defineEmits<{
 
 <style scoped lang="scss">
 .table-card {
+  /* 卡片固定填充剩余高度，不再由表格内容决定自身高度 */
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  flex-direction: column;
   margin-top: $space-5;
   border-radius: $radius-md;
+}
+
+.table-card :deep(.el-card__header) {
+  flex: 0 0 auto;
+}
+
+.table-card :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 唯一数据滚动层：长表格不会推动卡片底边或分页离开视口 */
+.table-card__table-scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .table-card__count {
@@ -157,6 +190,7 @@ const emit = defineEmits<{
 
 .table-card__pagination {
   display: flex;
+  flex: 0 0 auto;
   justify-content: flex-end;
   margin-top: $space-4;
   padding-top: $space-4;
@@ -166,7 +200,20 @@ const emit = defineEmits<{
 
 @include screen-sm {
   .table-card {
+    flex: 0 0 auto;
+    min-height: auto;
     margin-top: $space-3;
+  }
+
+  .table-card :deep(.el-card__body) {
+    flex: 0 0 auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .table-card__table-scroll {
+    flex: 0 0 auto;
+    overflow: visible;
   }
 
   .table-card__scope {

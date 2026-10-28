@@ -112,7 +112,7 @@ onBeforeUnmount(clearResetTimer);
 }
 
 .copy-button:hover:not(:disabled) {
-  border-color: #c9f2da;
+  border-color: $color-accent-tint;
   background: $color-accent-soft;
   color: $color-accent-strong;
 }
@@ -124,7 +124,7 @@ onBeforeUnmount(clearResetTimer);
 
 /* 已复制态：与悬停态同色，强化操作成功的确认感 */
 .copy-button--done {
-  border-color: #c9f2da;
+  border-color: $color-accent-tint;
   background: $color-accent-soft;
   color: $color-accent-strong;
 }

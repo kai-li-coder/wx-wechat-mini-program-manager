@@ -50,7 +50,8 @@ const lineCount = computed(() =>
 .json-viewer__label {
   @include text-micro;
 
-  color: #4ade80;
+  /* 深色代码面板上的青色高亮，与全局主色同族 */
+  color: #3fc9d6;
 }
 
 .json-viewer__meta {

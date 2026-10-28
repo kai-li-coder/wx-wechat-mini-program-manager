@@ -218,7 +218,7 @@ const metricCards = computed<MetricCardItem[]>(() => [
   flex-direction: column;
   padding: $space-5;
   overflow: hidden;
-  border: 1px solid #eff2f8;
+  border: 1px solid #eff4f5;
   border-radius: $radius-md;
   background: $color-surface;
   box-shadow: $shadow-panel;
@@ -277,7 +277,7 @@ const metricCards = computed<MetricCardItem[]>(() => [
   height: 4px;
   overflow: hidden;
   border-radius: $radius-pill;
-  background: #eef1f7;
+  background: #edf3f4;
 }
 
 .metric-card__fill {
@@ -319,10 +319,10 @@ const metricCards = computed<MetricCardItem[]>(() => [
   background: #ef4444;
 }
 
-/* 主指标卡：浅绿渐变高亮，呼应参考图的绿色主色 */
+/* 主指标卡：浅青渐变高亮，呼应参考图的青蓝主色 */
 .metric-card--lead {
-  border-color: #d9f3e4;
-  background: linear-gradient(135deg, #f3fcf7 0%, #ffffff 68%);
+  border-color: $color-accent-tint;
+  background: linear-gradient(135deg, #e2f4f5 0%, #ffffff 62%);
 }
 
 .metric-card--lead .metric-card__label {
@@ -341,7 +341,7 @@ const metricCards = computed<MetricCardItem[]>(() => [
   gap: 3px;
   overflow: hidden;
   border-radius: $radius-pill;
-  background: #eef1f7;
+  background: #edf3f4;
 }
 
 .metric-card__ratio-segment {

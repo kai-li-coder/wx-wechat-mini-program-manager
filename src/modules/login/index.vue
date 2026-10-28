@@ -1,10 +1,10 @@
-<!-- 管理端账号密码登录页面：浅色画布 + 白色圆角登录卡片 -->
+<!-- 管理端账号密码登录页面：浅青画布 + 白色圆角登录卡片 -->
 <template>
   <!-- 登录页面容器 -->
   <main class="login-page">
-    <!-- 背景光晕：绿色与蓝色各一枚，低透明度大范围模糊 -->
-    <span class="login-page__glow login-page__glow--green" aria-hidden="true" />
-    <span class="login-page__glow login-page__glow--blue" aria-hidden="true" />
+    <!-- 背景光晕：青蓝与浅青各一枚，低透明度大范围模糊 -->
+    <span class="login-page__glow login-page__glow--teal" aria-hidden="true" />
+    <span class="login-page__glow login-page__glow--mint" aria-hidden="true" />
 
     <!-- 登录面板 -->
     <section class="login-page__panel">
@@ -23,7 +23,7 @@
         </span>
         <div class="login-page__brand-text">
           <span class="login-page__brand-title">TRACE ADMIN</span>
-          <span class="login-page__brand-sub">链路观测台</span>
+          <span class="login-page__brand-sub">招人more埋点监测</span>
         </div>
       </header>
 
@@ -165,20 +165,20 @@ const handleLogin = async () => {
   pointer-events: none;
 }
 
-.login-page__glow--green {
+.login-page__glow--teal {
   top: -180px;
   right: -100px;
   width: 520px;
   height: 520px;
-  background: rgba(34, 197, 94, 0.18);
+  background: rgba(10, 144, 161, 0.16);
 }
 
-.login-page__glow--blue {
+.login-page__glow--mint {
   bottom: -200px;
   left: -120px;
   width: 480px;
   height: 480px;
-  background: rgba(79, 141, 247, 0.16);
+  background: rgba(124, 196, 205, 0.24);
 }
 
 .login-page__panel {
@@ -187,7 +187,7 @@ const handleLogin = async () => {
   width: 100%;
   max-width: 420px;
   padding: 40px;
-  border: 1px solid #eff2f8;
+  border: 1px solid #eff4f5;
   border-radius: $radius-lg;
   background: $color-surface;
   box-shadow: $shadow-overlay;
@@ -209,8 +209,8 @@ const handleLogin = async () => {
   height: 40px;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.28);
+  background: linear-gradient(135deg, #12a5b7, #077987);
+  box-shadow: 0 8px 18px rgba(10, 144, 161, 0.28);
   color: #ffffff;
 }
 

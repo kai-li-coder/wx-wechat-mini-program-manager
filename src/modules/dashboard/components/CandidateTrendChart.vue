@@ -94,8 +94,8 @@ const lineAreaStyle = {
     x2: 0,
     y2: 1,
     colorStops: [
-      { offset: 0, color: "rgba(79, 141, 247, 0.18)" },
-      { offset: 1, color: "rgba(79, 141, 247, 0.01)" },
+      { offset: 0, color: "rgba(10, 144, 161, 0.16)" },
+      { offset: 1, color: "rgba(10, 144, 161, 0.01)" },
     ],
   },
 };

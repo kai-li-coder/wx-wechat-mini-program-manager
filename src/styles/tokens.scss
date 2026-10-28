@@ -2,39 +2,41 @@
 // 该文件由 Vite 注入到所有 SCSS 中，只允许声明变量与 mixin，禁止输出任何选择器。
 
 /* ---------- 画布与表面 ---------- */
-// 参考设计：浅薰衣草画布 + 纯白卡片 + 白色侧边栏
-$color-background: #edf1f8;
+// 参考设计：浅青画布 + 纯白卡片 + 青蓝侧边栏（医疗健康仪表盘风格）
+$color-background: #f2f6f7;
 $color-surface: #ffffff;
-$color-surface-subtle: #f5f7fc;
-$color-surface-sunken: #e9edf6;
-$color-ink: #1e2433;
-$color-ink-raised: #262d40;
-$color-sidebar: #ffffff;
-$color-sidebar-raised: #f7f9fc;
+$color-surface-subtle: #f5f9fa;
+$color-surface-sunken: #e9f1f3;
+$color-ink: #1d2b33;
+$color-ink-raised: #24343d;
+$color-sidebar: #0a90a1;
+$color-sidebar-raised: #0b9db0;
 
 /* ---------- 文本 ---------- */
-$color-text-primary: #1e2433;
-$color-text-secondary: #5f6879;
-$color-text-muted: #6f7789;
-$color-text-placeholder: #8a93a6;
+$color-text-primary: #1d2b33;
+$color-text-secondary: #52646c;
+$color-text-muted: #6c7f87;
+$color-text-placeholder: #8ca0a7;
 $color-text-inverse: #ffffff;
-$color-text-on-sidebar: #5f6879;
-$color-text-on-sidebar-dim: #6f7789;
+$color-text-on-sidebar: #d6ecef;
+$color-text-on-sidebar-dim: #a9d4da;
 
 /* ---------- 线条 ---------- */
-$color-border: #e8ecf5;
-$color-border-soft: #f1f4fa;
-$color-border-strong: #dde3ef;
-$color-control-border: #e8ecf5;
-$color-border-on-ink: #eef1f8;
+$color-border: #e2ebed;
+$color-border-soft: #edf3f4;
+$color-border-strong: #d3e0e3;
+$color-control-border: #e2ebed;
+$color-border-on-ink: #eef4f5;
 
 /* ---------- 主色与状态色 ---------- */
-// 主色取参考图的亮绿；实底按钮使用略深的绿确保白字可读
-$color-accent: #16a34a;
-$color-accent-strong: #15803d;
-$color-accent-active: #166534;
-$color-accent-soft: #e9fbf1;
-$color-accent-line: #4ade80;
+// 主色取参考图的青蓝主色；实底按钮使用略深的青确保白字可读
+$color-accent: #0a90a1;
+$color-accent-strong: #077987;
+$color-accent-active: #055f6b;
+$color-accent-soft: #e2f4f5;
+$color-accent-softer: #ecf6f7;
+$color-accent-tint: #c7e8eb;
+$color-accent-line: #7cc4cd;
 $color-success: #15803d;
 $color-success-soft: #e9fbf1;
 $color-warning: #b45309;
@@ -81,17 +83,18 @@ $space-9: 56px;
 $space-10: 72px;
 
 /* ---------- 圆角 ---------- */
-// 参考图：卡片约 16px，按钮/输入框 10px，标签 8px，登录面板 20px
+// 参考图：卡片约 16px，按钮/输入框 10px，标签 8px，浮动侧栏 28px，登录面板 20px
 $radius-xs: 8px;
 $radius-sm: 10px;
 $radius-md: 16px;
 $radius-lg: 20px;
+$radius-rail: 28px;
 $radius-pill: 999px;
 
-/* ---------- 阴影（柔和、带冷色环境光） ---------- */
-$shadow-panel: 0 6px 20px rgba(23, 32, 56, 0.05);
-$shadow-raised: 0 12px 32px rgba(23, 32, 56, 0.09);
-$shadow-overlay: 0 24px 64px rgba(23, 32, 56, 0.14);
+/* ---------- 阴影（柔和、带冷青环境光） ---------- */
+$shadow-panel: 0 6px 20px rgba(23, 48, 56, 0.05);
+$shadow-raised: 0 12px 32px rgba(23, 48, 56, 0.09);
+$shadow-overlay: 0 24px 64px rgba(23, 48, 56, 0.14);
 
 /* ---------- 动效 ---------- */
 $ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -102,7 +105,6 @@ $dur-slow: 480ms;
 /* ---------- 布局尺寸 ---------- */
 $layout-sidebar-width: 236px;
 $layout-sidebar-collapsed: 76px;
-$layout-header-height: 64px;
 $layout-content-max: 1600px;
 
 /* ---------- Element Plus 语义色映射 ---------- */
@@ -135,7 +137,7 @@ $element-color-map: (
 
 // 键盘焦点环
 @mixin focus-ring {
-  outline: 2px solid rgba(22, 163, 74, 0.55);
+  outline: 2px solid rgba(10, 144, 161, 0.55);
   outline-offset: 2px;
 }
 

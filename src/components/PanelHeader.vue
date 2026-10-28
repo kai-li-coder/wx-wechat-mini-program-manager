@@ -47,7 +47,8 @@ const { title, subtitle = "" } = defineProps<{
 }
 
 .panel-head__title {
-  color: $color-text-primary;
+  /* 卡片标题使用深青主色：参考图分区标题为青色，加深一档保证 4.5:1 对比度 */
+  color: $color-accent-strong;
   font-size: $font-size-lg;
   font-weight: 700;
   line-height: 22px;
