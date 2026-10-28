@@ -105,7 +105,8 @@ $dur-slow: 480ms;
 /* ---------- 布局尺寸 ---------- */
 $layout-sidebar-width: 236px;
 $layout-sidebar-collapsed: 76px;
-$layout-content-max: 1600px;
+// 主体内容区水平留白：与左侧菜单栏、视口右边缘始终保持同一间距，不随断点变化
+$layout-gutter: 32px;
 
 /* ---------- Element Plus 语义色映射 ---------- */
 $element-color-map: (

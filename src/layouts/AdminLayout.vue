@@ -47,10 +47,6 @@ import AppSidebar from "@/layouts/components/AppSidebar.vue";
   /* 预留滚动条槽位：列表数据增减导致滚动条出现/消失时内容宽度不抖动 */
   scrollbar-gutter: stable;
   padding: 0;
-  background:
-    radial-gradient(900px 480px at 94% -10%, rgba(10, 144, 161, 0.07), transparent 60%),
-    radial-gradient(760px 440px at 0% 0%, rgba(124, 196, 205, 0.1), transparent 58%),
-    $color-background;
 }
 
 /* 内容区：固定在工作区剩余高度内，禁止表格内容把外层工作区撑出滚动 */
@@ -60,14 +56,15 @@ import AppSidebar from "@/layouts/components/AppSidebar.vue";
   min-height: 0;
   flex-direction: column;
   width: 100%;
-  max-width: $layout-content-max;
-  margin: 0 auto;
-  padding: $space-7 $space-5 $space-4;
+  /* 水平留白恒为 32px：左侧与浮动菜单栏拉开固定间距，右侧贴视口留同宽空白；
+     不设 max-width 与居中，避免宽屏下自动居中把两侧间距撑大 */
+  padding: $space-7 $layout-gutter $space-4;
 }
 
 @include screen-lg {
   .admin-layout__content {
-    padding: $space-6 $space-4 $space-4;
+    /* 窄桌面仅收窄顶部留白，水平 32px 间距按需求保持不变 */
+    padding-top: $space-6;
   }
 }
 
@@ -76,8 +73,8 @@ import AppSidebar from "@/layouts/components/AppSidebar.vue";
     /* 小屏恢复自然文档流，避免纵向查询表单被固定高度压缩 */
     flex: 0 0 auto;
     min-height: auto;
-    /* 小屏菜单底部留白为 10px，内容区保持同一边界 */
-    padding: $space-5 $space-3 10px;
+    /* 纵向留白随小屏压缩，水平 32px 间距仍然恒定 */
+    padding: $space-5 $layout-gutter 10px;
   }
 }
 </style>
