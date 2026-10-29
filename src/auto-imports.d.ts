@@ -20,8 +20,6 @@ declare global {
   const tryOnMounted: typeof import("@vueuse/core")["tryOnMounted"];
   /** VueUse 卸载生命周期自动导入。 */
   const tryOnUnmounted: typeof import("@vueuse/core")["tryOnUnmounted"];
-  /** VueUse 尺寸监听自动导入。 */
-  const useResizeObserver: typeof import("@vueuse/core")["useResizeObserver"];
-  /** VueUse 窗口尺寸自动导入。 */
-  const useWindowSize: typeof import("@vueuse/core")["useWindowSize"];
+  /** VueUse 媒体查询自动导入：仅在跨越断点时触发，替代连续的窗口宽度监听。 */
+  const useMediaQuery: typeof import("@vueuse/core")["useMediaQuery"];
 }

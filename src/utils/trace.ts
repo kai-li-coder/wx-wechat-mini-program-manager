@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
 import { TRACE_DATE_FORMAT, TRACE_DATE_TIME_FORMAT } from "@/utils/date";
-import { formatDeviceModelDisplay } from "@/utils/deviceModel";
+import { resolveTraceDeviceMatchFields, type TraceDeviceMatchFields } from "@/utils/traceDevice";
 
 /** 埋点聚合汇总结果。 */
 export interface TraceMetricSummary {
@@ -322,76 +322,6 @@ const errorWarningLevelWeightMap = new Map<TraceErrorWarningLevel, number>([
   ["critical", 3],
 ]);
 
-/** 判断值是否为可读取字段的普通对象。 */
-const isTraceRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-/** 解析设备信息对象，兼容后端直接返回 JSON 字符串的场景。 */
-const resolveTraceDeviceInfo = (deviceInfo: unknown): Record<string, unknown> | null => {
-  if (isTraceRecord(deviceInfo)) {
-    return deviceInfo;
-  }
-
-  if (typeof deviceInfo !== "string") {
-    return null;
-  }
-
-  try {
-    const parsedDeviceInfo: unknown = JSON.parse(deviceInfo);
-    if (isTraceRecord(parsedDeviceInfo)) {
-      return parsedDeviceInfo;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-};
-
-/** 格式化设备字段展示值。 */
-const formatTraceDeviceField = (fieldValue: unknown) => String(fieldValue ?? "").trim();
-
-/** 格式化设备字段匹配值。 */
-const formatTraceDeviceMatchField = (fieldValue: unknown) => formatTraceDeviceField(fieldValue).toLowerCase();
-
-/** 获取设备字段匹配文本。 */
-const resolveTraceDeviceMatchFields = (deviceInfo: unknown) => {
-  /** 解析后的设备信息。 */
-  const resolvedDeviceInfo = resolveTraceDeviceInfo(deviceInfo);
-  if (!resolvedDeviceInfo) {
-    return {
-      brand: "",
-      model: "",
-      osName: "",
-      platform: "",
-      system: "",
-      terminalModel: "",
-    };
-  }
-
-  /** 终端品牌。 */
-  const brand = formatTraceDeviceMatchField(resolvedDeviceInfo.brand);
-  /** 终端型号。 */
-  const model = formatTraceDeviceMatchField(resolvedDeviceInfo.model);
-  /** 操作系统名称。 */
-  const osName = formatTraceDeviceMatchField(resolvedDeviceInfo.osName);
-  /** 运行平台。 */
-  const platform = formatTraceDeviceMatchField(resolvedDeviceInfo.platform);
-  /** 系统版本信息。 */
-  const system = formatTraceDeviceMatchField(resolvedDeviceInfo.system);
-  /** 表格展示的终端型号匹配文本。 */
-  const terminalModel = `${brand}-${model}`;
-
-  return {
-    brand,
-    model,
-    osName,
-    platform,
-    system,
-    terminalModel,
-  };
-};
-
 /** 格式化链路事件阶段，展示中文文案与原始阶段编码。 */
 export const formatTraceStage = (stage?: string) => {
   /** 清理后的阶段编码。 */
@@ -465,36 +395,19 @@ const resolveClientTimeSortValue = (eventItem: TraceEventItem) => {
 
 /** 按客户端时间倒序返回新的链路事件列表。 */
 export const toClientTimeDescEventItems = (eventItems: TraceEventItem[]) =>
-  [...eventItems].sort((leftEventItem, rightEventItem) => {
-    /** 左侧事件客户端时间排序值。 */
-    const leftClientTimeValue = resolveClientTimeSortValue(leftEventItem);
-    /** 右侧事件客户端时间排序值。 */
-    const rightClientTimeValue = resolveClientTimeSortValue(rightEventItem);
-
-    if (leftClientTimeValue === rightClientTimeValue) {
-      return 0;
-    }
-
-    return rightClientTimeValue - leftClientTimeValue;
-  });
-
-/** 格式化终端型号，优先展示机型名称并保留原始型号代码。 */
-export const formatTraceTerminalModel = (deviceInfo: unknown) => {
-  /** 解析后的设备信息。 */
-  const resolvedDeviceInfo = resolveTraceDeviceInfo(deviceInfo);
-  if (!resolvedDeviceInfo) {
-    return "-";
-  }
-
-  /** 终端品牌。 */
-  const brand = formatTraceDeviceField(resolvedDeviceInfo.brand);
-  /** 终端型号。 */
-  const model = formatTraceDeviceField(resolvedDeviceInfo.model);
-  /** 终端型号展示文本。 */
-  const terminalModel = formatDeviceModelDisplay(brand, model);
-
-  return terminalModel || "-";
-};
+  // 先算出排序键再排序（Schwartzian transform）：解析次数由 O(n log n) 降为 O(n)，
+  // 避免比较器内每次比较都重复解析同一行的时间字符串。
+  eventItems
+    .map((eventItem, index) => ({
+      eventItem,
+      index,
+      sortValue: resolveClientTimeSortValue(eventItem),
+    }))
+    .sort((left, right) =>
+      // 两个无效时间相减会得到 NaN，必须先判等；相等时用原始下标保持稳定顺序。
+      left.sortValue !== right.sortValue ? right.sortValue - left.sortValue : left.index - right.index,
+    )
+    .map((entry) => entry.eventItem);
 
 /** 规范化错误日志标签文本。 */
 const normalizeTraceErrorTagText = (tag: unknown) => String(tag ?? "").trim();
@@ -502,43 +415,61 @@ const normalizeTraceErrorTagText = (tag: unknown) => String(tag ?? "").trim();
 /** 解析错误日志标签去重键。 */
 const resolveTraceErrorTagUniqueKey = (tag: string) => tag.toLowerCase();
 
+/** 错误日志标签中的空白字符匹配，模块级复用避免每次调用都新建 RegExp。 */
+const TRACE_ERROR_TAG_SPACE_PATTERN = /\s+/g;
+
 /** 解析错误日志快捷标签匹配键。 */
-const resolveTraceErrorQuickTagKey = (tag: string) => resolveTraceErrorTagUniqueKey(tag).replace(/\s+/g, "");
+const resolveTraceErrorQuickTagKey = (tag: string) => resolveTraceErrorTagUniqueKey(tag).replace(TRACE_ERROR_TAG_SPACE_PATTERN, "");
 
 /** 规范化错误日志标签列表。 */
-const normalizeTraceErrorTags = (filterTags?: string[]) =>
-  (filterTags ?? []).reduce<string[]>((normalizedTags, rawTag) => {
+const normalizeTraceErrorTags = (filterTags?: string[]) => {
+  /** 去重键 → 最后一次出现的标签与位置。 */
+  const tagEntryMap = new Map<string, TraceErrorTagBuildItem>();
+
+  (filterTags ?? []).forEach((rawTag, index) => {
     /** 清理后的标签文本。 */
     const normalizedTag = normalizeTraceErrorTagText(rawTag);
     if (!normalizedTag) {
-      return normalizedTags;
+      return;
     }
 
-    /** 重复标签下标。 */
-    const duplicatedTagIndex = normalizedTags.findIndex(
-      (tag) => resolveTraceErrorTagUniqueKey(tag) === resolveTraceErrorTagUniqueKey(normalizedTag),
-    );
-    if (duplicatedTagIndex >= 0) {
-      normalizedTags.splice(duplicatedTagIndex, 1);
-    }
+    // 大小写不敏感地覆盖同名标签，等价于原实现「先删除旧项再追加到末尾」，
+    // 但由 O(k²) 的 findIndex + splice 降为 O(k) 的字典写入。
+    tagEntryMap.set(resolveTraceErrorTagUniqueKey(normalizedTag), { tag: normalizedTag, index });
+  });
 
-    normalizedTags.push(normalizedTag);
-    return normalizedTags;
-  }, []);
+  // Map 覆盖写入不会改变键的插入位置，因此需按「最后一次出现的下标」重排。
+  return [...tagEntryMap.values()]
+    .sort((leftTagItem, rightTagItem) => leftTagItem.index - rightTagItem.index)
+    .map((tagItem) => tagItem.tag);
+};
+
+/** 快捷标签选项 → 归一化匹配键集合，模块加载时一次算好，避免每次筛选重建数组与重复归一化。 */
+const traceErrorBrandQuickTagKeySets = new Map(
+  traceErrorBrandQuickTagOptions.map((quickTagOption) => [
+    quickTagOption,
+    new Set([quickTagOption.label, ...quickTagOption.aliases].map(resolveTraceErrorQuickTagKey)),
+  ]),
+);
+
+/** 机型快捷标签选项 → 归一化匹配键集合。 */
+const traceErrorDeviceQuickTagKeySets = new Map(
+  traceErrorDeviceQuickTagOptions.map((quickTagOption) => [
+    quickTagOption,
+    new Set([quickTagOption.label, ...quickTagOption.aliases].map(resolveTraceErrorQuickTagKey)),
+  ]),
+);
 
 /** 获取错误日志快捷标签选项。 */
 const resolveTraceErrorQuickTagOption = <TQuickValue extends string>(
   tag: string,
   quickTagOptions: Array<TraceErrorQuickTagOption<TQuickValue>>,
+  quickTagKeySets: Map<TraceErrorQuickTagOption<TQuickValue>, Set<string>>,
 ) => {
   /** 快捷标签匹配键。 */
   const quickTagKey = resolveTraceErrorQuickTagKey(tag);
 
-  return quickTagOptions.find((quickTagOption) =>
-    [quickTagOption.label, ...quickTagOption.aliases].some(
-      (alias) => resolveTraceErrorQuickTagKey(alias) === quickTagKey,
-    ),
-  );
+  return quickTagOptions.find((quickTagOption) => quickTagKeySets.get(quickTagOption)?.has(quickTagKey) ?? false);
 };
 
 /** 按原始顺序输出错误日志标签。 */
@@ -563,7 +494,11 @@ export const normalizeTraceErrorBrandTags = (filterTags?: string[]): TraceErrorB
 
   normalizedTags.forEach((tag, index) => {
     /** 命中的品牌快捷标签。 */
-    const brandQuickTagOption = resolveTraceErrorQuickTagOption(tag, traceErrorBrandQuickTagOptions);
+    const brandQuickTagOption = resolveTraceErrorQuickTagOption(
+      tag,
+      traceErrorBrandQuickTagOptions,
+      traceErrorBrandQuickTagKeySets,
+    );
     if (brandQuickTagOption) {
       brandQuickFilter = brandQuickTagOption.value;
       brandQuickTagItem = { tag: brandQuickTagOption.label, index };
@@ -596,7 +531,11 @@ export const normalizeTraceErrorDeviceTags = (filterTags?: string[]): TraceError
 
   normalizedTags.forEach((tag, index) => {
     /** 命中的设备快捷标签。 */
-    const deviceQuickTagOption = resolveTraceErrorQuickTagOption(tag, traceErrorDeviceQuickTagOptions);
+    const deviceQuickTagOption = resolveTraceErrorQuickTagOption(
+      tag,
+      traceErrorDeviceQuickTagOptions,
+      traceErrorDeviceQuickTagKeySets,
+    );
     if (deviceQuickTagOption) {
       deviceQuickFilter = deviceQuickTagOption.value;
       deviceQuickTagItem = { tag: deviceQuickTagOption.label, index };
@@ -1226,70 +1165,56 @@ const resolveTraceErrorEventFilterOptions = (
 };
 
 /** 判断是否为 iOS 设备。 */
-const isTraceIosDevice = (eventItem: TraceEventItem) => {
-  /** 设备匹配字段。 */
-  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
-
-  return (
-    matchFields.platform === "ios" ||
-    matchFields.osName === "ios" ||
-    matchFields.system.includes("ios") ||
-    matchFields.brand.includes("iphone") ||
-    matchFields.model.includes("iphone") ||
-    matchFields.model.includes("ipad") ||
-    matchFields.model.includes("ipod")
-  );
-};
+const isTraceIosDevice = (matchFields: TraceDeviceMatchFields) =>
+  matchFields.platform === "ios" ||
+  matchFields.osName === "ios" ||
+  matchFields.system.includes("ios") ||
+  matchFields.brand.includes("iphone") ||
+  matchFields.model.includes("iphone") ||
+  matchFields.model.includes("ipad") ||
+  matchFields.model.includes("ipod");
 
 /** 判断是否为 Android 设备。 */
-const isTraceAndroidDevice = (eventItem: TraceEventItem) => {
-  /** 设备匹配字段。 */
-  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
-
-  return matchFields.platform === "android" || matchFields.osName === "android" || matchFields.system.includes("android");
-};
+const isTraceAndroidDevice = (matchFields: TraceDeviceMatchFields) =>
+  matchFields.platform === "android" || matchFields.osName === "android" || matchFields.system.includes("android");
 
 /** 判断是否为 iPhone 品牌设备。 */
-const isTraceIphoneBrandDevice = (eventItem: TraceEventItem) => {
-  /** 设备匹配字段。 */
-  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
-
-  return matchFields.brand.includes("iphone") || matchFields.model.includes("iphone");
-};
+const isTraceIphoneBrandDevice = (matchFields: TraceDeviceMatchFields) =>
+  matchFields.brand.includes("iphone") || matchFields.model.includes("iphone");
 
 /** 判断是否为开发工具测试记录。 */
-const isTraceDevtoolsTestRecord = (eventItem: TraceEventItem) => {
-  /** 设备匹配字段。 */
-  const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
-
-  return (
-    matchFields.terminalModel.startsWith("devtools") ||
-    matchFields.brand.startsWith("devtools") ||
-    matchFields.model.startsWith("devtools")
-  );
-};
+const isTraceDevtoolsTestRecord = (matchFields: TraceDeviceMatchFields) =>
+  matchFields.terminalModel.startsWith("devtools") ||
+  matchFields.brand.startsWith("devtools") ||
+  matchFields.model.startsWith("devtools");
 
 /** 判断是否命中设备类型快捷筛选。 */
-const isMatchedTraceDeviceQuickFilter = (eventItem: TraceEventItem, deviceQuickFilter?: TraceDeviceQuickFilter) => {
+const isMatchedTraceDeviceQuickFilter = (
+  matchFields: TraceDeviceMatchFields,
+  deviceQuickFilter?: TraceDeviceQuickFilter,
+) => {
   if (!deviceQuickFilter) {
     return true;
   }
 
   if (deviceQuickFilter === "ios") {
-    return isTraceIosDevice(eventItem);
+    return isTraceIosDevice(matchFields);
   }
 
-  return isTraceAndroidDevice(eventItem);
+  return isTraceAndroidDevice(matchFields);
 };
 
 /** 判断是否命中品牌快捷筛选。 */
-const isMatchedTraceBrandQuickFilter = (eventItem: TraceEventItem, brandQuickFilter?: TraceBrandQuickFilter) => {
+const isMatchedTraceBrandQuickFilter = (
+  matchFields: TraceDeviceMatchFields,
+  brandQuickFilter?: TraceBrandQuickFilter,
+) => {
   if (!brandQuickFilter) {
     return true;
   }
 
   /** 是否为 iPhone 品牌设备。 */
-  const isIphoneBrandDevice = isTraceIphoneBrandDevice(eventItem);
+  const isIphoneBrandDevice = isTraceIphoneBrandDevice(matchFields);
   if (brandQuickFilter === "iphone") {
     return isIphoneBrandDevice;
   }
@@ -1301,6 +1226,11 @@ const isMatchedTraceBrandQuickFilter = (eventItem: TraceEventItem, brandQuickFil
 export const filterErrorEvents = (eventItems: TraceEventItem[], filterOptions?: TraceErrorEventFilterOptions | string) => {
   /** 错误日志本地筛选条件。 */
   const resolvedFilterOptions = resolveTraceErrorEventFilterOptions(filterOptions);
+  /** 是否存在依赖设备字段的筛选条件；没有条件时无需解析设备信息。 */
+  const needsDeviceMatch =
+    Boolean(resolvedFilterOptions.deviceQuickFilter) ||
+    Boolean(resolvedFilterOptions.brandQuickFilter) ||
+    Boolean(resolvedFilterOptions.isExcludeTestRecords);
 
   return eventItems.filter((eventItem) => {
     /** 归类后的事件结果。 */
@@ -1315,15 +1245,22 @@ export const filterErrorEvents = (eventItems: TraceEventItem[], filterOptions?: 
       return false;
     }
 
-    if (!isMatchedTraceDeviceQuickFilter(eventItem, resolvedFilterOptions.deviceQuickFilter)) {
+    if (!needsDeviceMatch) {
+      return true;
+    }
+
+    // 每行只解析一次设备信息，供后续三个条件复用（原实现最多重复解析 3 次）。
+    const matchFields = resolveTraceDeviceMatchFields(eventItem.deviceInfo);
+
+    if (!isMatchedTraceDeviceQuickFilter(matchFields, resolvedFilterOptions.deviceQuickFilter)) {
       return false;
     }
 
-    if (!isMatchedTraceBrandQuickFilter(eventItem, resolvedFilterOptions.brandQuickFilter)) {
+    if (!isMatchedTraceBrandQuickFilter(matchFields, resolvedFilterOptions.brandQuickFilter)) {
       return false;
     }
 
-    if (resolvedFilterOptions.isExcludeTestRecords && isTraceDevtoolsTestRecord(eventItem)) {
+    if (resolvedFilterOptions.isExcludeTestRecords && isTraceDevtoolsTestRecord(matchFields)) {
       return false;
     }
 

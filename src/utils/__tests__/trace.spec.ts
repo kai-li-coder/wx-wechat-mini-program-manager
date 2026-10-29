@@ -7,7 +7,6 @@ import {
   filterErrorEvents,
   formatTraceEventCode,
   formatTraceStage,
-  formatTraceTerminalModel,
   normalizeTraceErrorBrandTags,
   normalizeTraceErrorDeviceTags,
   resolveTraceEventRowKey,
@@ -22,6 +21,7 @@ import {
   toTopFailEventRankItems,
   traceEventCodes,
 } from "@/utils/trace";
+import { formatTraceTerminalModel } from "@/utils/traceDeviceModel";
 
 /** 构造测试用聚合数据。 */
 const metricItems: TraceMetricItem[] = [

@@ -15,13 +15,15 @@
 <script setup lang="ts">
 import { formatJsonText, isJsonValueEmpty } from "@/utils/json";
 
-const { value } = defineProps<{
+const { value, text } = defineProps<{
   /** 待格式化展示的数据。 */
   value: unknown;
+  /** 已格式化好的 JSON 文本；传入时跳过内部序列化，供父组件复用同一次计算结果。 */
+  text?: string;
 }>();
 
 /** 格式化后的 JSON 文本。 */
-const formattedJsonText = computed(() => formatJsonText(value));
+const formattedJsonText = computed(() => text ?? formatJsonText(value));
 
 /** 内容行数，用于快速判断数据体量。 */
 const lineCount = computed(() =>

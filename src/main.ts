@@ -1,5 +1,7 @@
 // 应用入口：挂载 Vue、Pinia、路由与 Element Plus。
-import "element-plus/dist/index.css";
+// Element Plus 组件样式由按需解析器注入；ElMessage 属于脚本调用（不经模板解析），
+// 需在此显式引入其样式，同时带入 base 基础样式。
+import "element-plus/es/components/message/style/css";
 import "@/styles/base.scss";
 
 import { createPinia } from "pinia";

@@ -14,7 +14,7 @@
 
     <!-- 错误日志表格滚动区：仅表格内容滚动，标题与分页固定 -->
     <div class="table-card__table-scroll">
-      <el-table v-loading="loading" :data="eventItems" :row-key="resolveTraceEventRowKey">
+      <el-table v-loading="loading" :data="tableRows" :row-key="resolveTraceEventRowKey">
         <template #empty>
           <EmptyState description="当前筛选条件下没有错误日志" />
         </template>
@@ -27,16 +27,11 @@
           type="index"
           width="72"
         />
-        <el-table-column label="客户端时间" min-width="168" show-overflow-tooltip>
-          <template #default="{ row }">
-            <!-- 客户端时间 -->
-            {{ formatDisplayDateTime(row.clientTime) }}
-          </template>
-        </el-table-column>
+        <el-table-column label="客户端时间" min-width="168" prop="clientTimeText" show-overflow-tooltip />
         <el-table-column label="结果" width="96">
           <template #default="{ row }">
             <!-- 结果标签 -->
-            <ResultTag :result="resolveTraceEventResult(row)" />
+            <ResultTag :result="row.resolvedResult" />
           </template>
         </el-table-column>
         <el-table-column label="错误码" min-width="160" prop="errorCode" show-overflow-tooltip />
@@ -46,24 +41,9 @@
           prop="errorMessage"
           show-overflow-tooltip
         />
-        <el-table-column label="事件码" min-width="240" show-overflow-tooltip>
-          <template #default="{ row }">
-            <!-- 事件码中文文案 -->
-            {{ formatTraceEventCode(row.eventCode) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="终端型号" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">
-            <!-- 终端型号 -->
-            {{ formatTraceTerminalModel(row.deviceInfo) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="服务端时间" min-width="168" show-overflow-tooltip>
-          <template #default="{ row }">
-            <!-- 服务端记录时间 -->
-            {{ formatDisplayDateTime(resolveTraceEventServerTime(row)) }}
-          </template>
-        </el-table-column>
+        <el-table-column label="事件码" min-width="240" prop="eventCodeText" show-overflow-tooltip />
+        <el-table-column label="终端型号" min-width="220" prop="terminalModelText" show-overflow-tooltip />
+        <el-table-column label="服务端时间" min-width="168" prop="serverTimeText" show-overflow-tooltip />
         <el-table-column label="Flow ID" min-width="180" prop="flowId" show-overflow-tooltip />
         <el-table-column
           label="候选人 ID"
@@ -104,11 +84,25 @@ import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
 import {
   formatTraceEventCode,
-  formatTraceTerminalModel,
   resolveTraceEventRowKey,
   resolveTraceEventResult,
   resolveTraceEventServerTime,
 } from "@/utils/trace";
+import { formatTraceTerminalModel } from "@/utils/traceDeviceModel";
+
+/** 表格行视图模型：在原事件字段上附加预格式化文本，保留原始字段供 prop 列读取。 */
+type TraceEventTableRow = TraceEventItem & {
+  /** 客户端时间展示文本。 */
+  clientTimeText: string;
+  /** 服务端时间展示文本。 */
+  serverTimeText: string;
+  /** 事件码展示文本。 */
+  eventCodeText: string;
+  /** 终端型号展示文本。 */
+  terminalModelText: string;
+  /** 归类后的结果。 */
+  resolvedResult: string;
+};
 
 const {
   eventItems,
@@ -128,6 +122,22 @@ const {
   /** 总记录数。 */
   total: number;
 }>();
+
+/**
+ * 表格行数据：格式化只在数据变化时做一次。
+ * 原实现把格式化函数写在单元格插槽里，表格每次重渲染都会对每行重复执行
+ * 日期解析、事件码查表与设备信息 JSON 解析。
+ */
+const tableRows = computed<TraceEventTableRow[]>(() =>
+  eventItems.map((eventItem) => ({
+    ...eventItem,
+    clientTimeText: formatDisplayDateTime(eventItem.clientTime),
+    serverTimeText: formatDisplayDateTime(resolveTraceEventServerTime(eventItem)),
+    eventCodeText: formatTraceEventCode(eventItem.eventCode),
+    terminalModelText: formatTraceTerminalModel(eventItem.deviceInfo),
+    resolvedResult: resolveTraceEventResult(eventItem),
+  })),
+);
 
 /** 计算分页后的表格序号。 */
 const resolveTableRowIndex = (rowIndex: number) => (pageNum - 1) * pageSize + rowIndex + 1;

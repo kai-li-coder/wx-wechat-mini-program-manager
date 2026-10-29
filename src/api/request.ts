@@ -1,6 +1,7 @@
 // 统一 HTTP 请求封装，负责后端响应解包、鉴权请求头和错误提示。
 import axios, { AxiosHeaders, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
-import { ElMessage } from "element-plus";
+// 走组件子路径导入，避免 Element Plus 桶入口把全量组件带进产物。
+import { ElMessage } from "element-plus/es/components/message/index";
 
 import { IS_LOGIN_VERIFICATION_DISABLED } from "@/config/auth";
 import {
@@ -161,7 +162,9 @@ httpClient.interceptors.response.use(
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       handleUnauthorizedResponse();
     }
-    ElMessage.error(errorMessage);
+    // 使用 grouping 聚合相同文案：并发请求同时失败时合并为一条带计数的提示，
+    // 避免多条 toast 叠加触发额外的布局重排。
+    ElMessage({ message: errorMessage, type: "error", grouping: true });
     return Promise.reject(error);
   },
 );

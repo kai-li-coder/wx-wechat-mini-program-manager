@@ -39,6 +39,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import type { TraceDashboardCandidateTrend, TraceDashboardGranularity } from "@/api/trace";
 import EmptyState from "@/components/EmptyState.vue";
 import PanelHeader from "@/components/PanelHeader.vue";
+import { useChartResize } from "@/composables/useChartResize";
 import {
   chartAxisLabel,
   chartAxisLine,
@@ -84,6 +85,10 @@ const hasCandidateTrendData = computed(() =>
 
 /** 趋势图聚合文案。 */
 const trendGranularityText = computed(() => trendGranularityTextMap[candidateTrend.granularity]);
+/** 图表尺寸自适应：节流 + 跳过 ResizeObserver 首帧冗余回调。 */
+const { markRendered } = useChartResize(chartRootRef, () => chartInstance);
+/** 上一次渲染使用的图表类型，用于判断是否需要替换整个系列。 */
+let lastRenderedChartMode: CandidateTrendChartMode | null = null;
 
 /** 折线图渐变填充：强调趋势走向，不喧宾夺主。 */
 const lineAreaStyle = {
@@ -108,62 +113,75 @@ const renderChart = () => {
 
   if (!chartInstance) {
     chartInstance = echarts.init(chartRootRef.value);
+    // 记录初始化时的容器尺寸，供紧随其后的首帧尺寸回调比对。
+    markRendered();
   }
 
   /** 坐标轴标签列表。 */
-  const axisLabels = candidateTrendRows.value.map(
-    (candidateTrendRow) => candidateTrendRow.label || candidateTrendRow.bucket,
-  );
+  const axisLabels: string[] = [];
+  /** 去重候选人数序列。 */
+  const candidateCounts: number[] = [];
+  // 单次遍历同时产出坐标轴与数据序列。
+  for (const candidateTrendRow of candidateTrendRows.value) {
+    axisLabels.push(candidateTrendRow.label || candidateTrendRow.bucket);
+    candidateCounts.push(candidateTrendRow.candidateCount);
+  }
+
   /** 是否为折线图。 */
   const isLineMode = chartMode.value === "line";
+  // 仅在折线/柱状切换时替换系列：merge 模式下 areaStyle: undefined 无法清除上一次的渐变填充；
+  // 纯数据刷新保留 merge，让 ECharts 复用已有系列实例，避免每次刷新都全量重建。
+  const shouldReplaceSeries = lastRenderedChartMode !== null && lastRenderedChartMode !== chartMode.value;
 
-  chartInstance.clear();
-  chartInstance.setOption({
-    animation: !prefersReducedMotion(),
-    color: [chartColors.accent],
-    textStyle: { fontFamily: chartFontFamily },
-    tooltip: { axisPointer: chartAxisPointer, trigger: "axis", ...chartTooltip },
-    grid: { top: 18, right: 8, bottom: 4, left: 4, containLabel: true },
-    xAxis: {
-      type: "category",
-      data: axisLabels,
-      axisLabel: chartAxisLabel,
-      axisLine: chartAxisLine,
-      axisTick: { show: false },
-    },
-    yAxis: {
-      type: "value",
-      minInterval: 1,
-      axisLabel: chartAxisLabel,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      splitLine: chartSplitLine,
-    },
-    series: [
-      {
-        name: "候选人数",
-        type: chartMode.value,
-        barMaxWidth: 22,
-        smooth: isLineMode,
-        showSymbol: false,
-        symbolSize: 6,
-        lineStyle: { width: 2, color: chartColors.accent },
-        itemStyle: { color: chartColors.accent, borderRadius: isLineMode ? 0 : [6, 6, 0, 0] },
-        areaStyle: isLineMode ? lineAreaStyle : undefined,
-        data: candidateTrendRows.value.map((candidateTrendRow) => candidateTrendRow.candidateCount),
+  chartInstance.setOption(
+    {
+      animation: !prefersReducedMotion(),
+      color: [chartColors.accent],
+      textStyle: { fontFamily: chartFontFamily },
+      tooltip: { axisPointer: chartAxisPointer, trigger: "axis", ...chartTooltip },
+      grid: { top: 18, right: 8, bottom: 4, left: 4, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: axisLabels,
+        axisLabel: chartAxisLabel,
+        axisLine: chartAxisLine,
+        axisTick: { show: false },
       },
-    ],
-  });
+      yAxis: {
+        type: "value",
+        minInterval: 1,
+        axisLabel: chartAxisLabel,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: chartSplitLine,
+      },
+      series: [
+        {
+          name: "候选人数",
+          type: chartMode.value,
+          barMaxWidth: 22,
+          smooth: isLineMode,
+          showSymbol: false,
+          symbolSize: 6,
+          lineStyle: { width: 2, color: chartColors.accent },
+          itemStyle: { color: chartColors.accent, borderRadius: isLineMode ? 0 : [6, 6, 0, 0] },
+          areaStyle: isLineMode ? lineAreaStyle : undefined,
+          data: candidateCounts,
+        },
+      ],
+    },
+    shouldReplaceSeries ? { replaceMerge: ["series"] } : undefined,
+  );
+
+  lastRenderedChartMode = chartMode.value;
 };
 
-watch(() => [candidateTrend, chartMode.value], renderChart, { deep: true });
+// 用数组形式分别声明两个依赖，避免 `() => [a, b]` 每次求值都返回新数组导致比较恒不相等；
+// 同时去掉 deep：父组件整体替换数据，浅比较即可。
+watch([() => candidateTrend, chartMode], renderChart, { flush: "post" });
 
 tryOnMounted(() => {
   renderChart();
-});
-
-useResizeObserver(chartRootRef, () => {
-  chartInstance?.resize();
 });
 
 tryOnUnmounted(() => {

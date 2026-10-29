@@ -83,7 +83,10 @@
 
 <script setup lang="ts">
 import { Lock, User } from "@element-plus/icons-vue";
-import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+// ElMessage 走组件子路径导入，避免 Element Plus 桶入口把全量组件带进产物；
+// FormInstance / FormRules 是纯类型，编译期即被擦除，保留包入口导入不影响体积。
+import { ElMessage } from "element-plus/es/components/message/index";
+import type { FormInstance, FormRules } from "element-plus";
 
 import type { AdminLoginRequest } from "@/api/auth";
 import { resolveLoginRedirectPath } from "@/router/authGuard";

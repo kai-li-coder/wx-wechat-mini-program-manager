@@ -9,13 +9,17 @@ import type {
   TraceDashboardTrend,
   TraceDashboardTrendRow,
 } from "@/api/trace";
-import { formatTraceDateTime } from "@/utils/date";
+import { formatTraceDate, formatTraceDateTime } from "@/utils/date";
 
 /** 单日小时坐标轴。 */
 const dashboardDayHours = Array.from({ length: 24 }, (_, hour) => hour);
 
 /** 格式化小时桶展示标签。 */
 const formatDashboardHourLabel = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
+
+/** 拼接当日整点桶键，避免为每个小时都构造 dayjs 对象再格式化。 */
+const createDashboardHourBucketKey = (dayPrefix: string, hour: number) =>
+  `${dayPrefix} ${String(hour).padStart(2, "0")}:00:00`;
 
 /** 标准化后端返回的小时桶键。 */
 const normalizeDashboardHourBucket = (bucket: string) => {
@@ -59,12 +63,12 @@ const createFullDayTrend = (trend: TraceDashboardTrend, baseDateTime: dayjs.Dayj
 
   /** 后端趋势行字典。 */
   const trendRowMap = new Map(trend.rows.map((trendRow) => [normalizeDashboardHourBucket(trendRow.bucket), trendRow]));
+  /** 补桶日期前缀，24 个桶共用。 */
+  const dayPrefix = formatTraceDate(baseDateTime);
   /** 补齐后的趋势行。 */
   const fullDayTrendRows: TraceDashboardTrendRow[] = dashboardDayHours.map((hour) => {
-    /** 小时桶时间。 */
-    const hourDateTime = baseDateTime.startOf("day").hour(hour);
     /** 小时桶键。 */
-    const bucket = formatTraceDateTime(hourDateTime);
+    const bucket = createDashboardHourBucketKey(dayPrefix, hour);
     /** 后端返回的趋势行。 */
     const trendRow = trendRowMap.get(bucket);
 
@@ -99,12 +103,12 @@ const createFullDayCandidateTrend = (
       candidateTrendRow,
     ]),
   );
+  /** 补桶日期前缀，24 个桶共用。 */
+  const dayPrefix = formatTraceDate(baseDateTime);
   /** 补齐后的候选人趋势行。 */
   const fullDayCandidateTrendRows: TraceDashboardCandidateTrendRow[] = dashboardDayHours.map((hour) => {
-    /** 小时桶时间。 */
-    const hourDateTime = baseDateTime.startOf("day").hour(hour);
     /** 小时桶键。 */
-    const bucket = formatTraceDateTime(hourDateTime);
+    const bucket = createDashboardHourBucketKey(dayPrefix, hour);
     /** 后端返回的候选人趋势行。 */
     const candidateTrendRow = candidateTrendRowMap.get(bucket);
 

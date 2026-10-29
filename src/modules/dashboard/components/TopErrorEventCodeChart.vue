@@ -35,6 +35,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import type { TraceDashboardTopErrorEventCode } from "@/api/trace";
 import EmptyState from "@/components/EmptyState.vue";
 import PanelHeader from "@/components/PanelHeader.vue";
+import { useChartResize } from "@/composables/useChartResize";
 import {
   chartAxisLabel,
   chartAxisPointer,
@@ -64,6 +65,8 @@ let chartInstance: echarts.ECharts | null = null;
 const topFailEventRankItems = computed(() => topErrorEventCodes ?? []);
 /** 是否存在失败事件码数据。 */
 const hasTopFailEventData = computed(() => topFailEventRankItems.value.length > 0);
+/** 图表尺寸自适应：节流 + 跳过 ResizeObserver 首帧冗余回调。 */
+const { markRendered } = useChartResize(chartRootRef, () => chartInstance);
 
 /** 渲染五大错误码图表。 */
 const renderChart = () => {
@@ -73,19 +76,25 @@ const renderChart = () => {
 
   if (!chartInstance) {
     chartInstance = echarts.init(chartRootRef.value);
+    // 记录初始化时的容器尺寸，供紧随其后的首帧尺寸回调比对。
+    markRendered();
   }
 
-  chartInstance.clear();
   if (!hasTopFailEventData.value) {
+    // 仅无数据时清空一次，避免残留上一次的柱子；空态由上层浮层提示。
+    chartInstance.clear();
     return;
   }
 
   /** 事件码展示标签。 */
-  const eventCodeLabels = topFailEventRankItems.value.map((rankItem) =>
-    formatTraceEventCode(rankItem.eventCode),
-  );
+  const eventCodeLabels: string[] = [];
   /** 失败事件数。 */
-  const eventCounts = topFailEventRankItems.value.map((rankItem) => rankItem.eventCount);
+  const eventCounts: number[] = [];
+  // 单次遍历同时产出类别轴与数值序列。
+  for (const rankItem of topFailEventRankItems.value) {
+    eventCodeLabels.push(formatTraceEventCode(rankItem.eventCode));
+    eventCounts.push(rankItem.eventCount);
+  }
 
   chartInstance.setOption({
     animation: !prefersReducedMotion(),
@@ -131,14 +140,11 @@ const renderChart = () => {
   });
 };
 
-watch(() => topErrorEventCodes, renderChart, { deep: true });
+// 父组件以整体替换的方式更新排行数据，浅比较即可；deep 只会带来无谓的深遍历。
+watch(() => topErrorEventCodes, renderChart, { flush: "post" });
 
 tryOnMounted(() => {
   renderChart();
-});
-
-useResizeObserver(chartRootRef, () => {
-  chartInstance?.resize();
 });
 
 tryOnUnmounted(() => {

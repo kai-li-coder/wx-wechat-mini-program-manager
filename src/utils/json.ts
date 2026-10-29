@@ -23,3 +23,29 @@ export const formatJsonText = (value: unknown): string => {
 /** 生成可直接复制的 JSON 文本；空数据返回空字符串，供复制按钮判定禁用态。 */
 export const formatJsonTextForCopy = (value: unknown): string =>
   isJsonValueEmpty(value) ? "" : formatJsonText(value);
+
+/** JSON 文本二元组：展示文本、复制文本与行数一次产出。 */
+export interface JsonTextPair {
+  /** 面板展示文本。 */
+  displayText: string;
+  /** 复制文本，空数据为空字符串。 */
+  copyText: string;
+  /** 文本行数。 */
+  lineCount: number;
+}
+
+/**
+ * 一次序列化同时产出展示与复制所需信息。
+ * 展示组件与复制按钮分别调用格式化函数会让同一份数据被 stringify 两次，
+ * 大体积扩展字段下这是抽屉打开时的主要卡顿来源。
+ */
+export const createJsonTextPair = (value: unknown): JsonTextPair => {
+  if (isJsonValueEmpty(value)) {
+    return { displayText: EMPTY_JSON_TEXT, copyText: "", lineCount: 0 };
+  }
+
+  /** 格式化后的 JSON 文本。 */
+  const displayText = formatJsonText(value);
+
+  return { displayText, copyText: displayText, lineCount: displayText.split("\n").length };
+};

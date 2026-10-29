@@ -87,6 +87,14 @@ export const chartAxisPointer = {
   },
 };
 
+/**
+ * 系统「减少动态效果」媒体查询，模块级只创建一次。
+ * 每次图表渲染都调用 window.matchMedia 会重复解析媒体查询并新建 MediaQueryList，属纯浪费。
+ */
+const reducedMotionQuery =
+  typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+
 /** 读取系统「减少动态效果」偏好，用于关闭图表入场动画。 */
-export const prefersReducedMotion = () =>
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+export const prefersReducedMotion = () => Boolean(reducedMotionQuery?.matches);

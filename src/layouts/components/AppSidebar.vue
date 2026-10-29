@@ -93,8 +93,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 /** 当前路由对象。 */
 const currentRoute = useRoute();
-/** 当前窗口宽度。 */
-const { width: windowWidth } = useWindowSize();
+/** 是否为窄屏视口：仅在跨越 1024px 断点时变化，避免窗口 resize 期间每帧触发侧栏重渲染。 */
+const isCompactViewport = useMediaQuery("(max-width: 1024px)");
 
 /** 菜单路由列表。 */
 const menuRoutes: MenuRouteItem[] = [
@@ -106,7 +106,7 @@ const menuRoutes: MenuRouteItem[] = [
 /** 侧边栏宽度。 */
 const sidebarWidth = computed(() => (isSidebarCollapsed.value ? "76px" : "236px"));
 /** 小屏与窄桌面强制折叠侧边栏，避免挤压数据区。 */
-const isSidebarCollapsed = computed(() => appStore.isSidebarCollapsed || windowWidth.value <= 1024);
+const isSidebarCollapsed = computed(() => appStore.isSidebarCollapsed || isCompactViewport.value);
 /** 当前激活菜单路径。 */
 const activeMenu = computed(() => currentRoute.path);
 

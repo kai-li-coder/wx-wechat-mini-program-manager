@@ -18,7 +18,8 @@
 
 <script setup lang="ts">
 import { Check, CopyDocument } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+// 走组件子路径导入，避免 Element Plus 桶入口把全量组件带进产物。
+import { ElMessage } from "element-plus/es/components/message/index";
 
 import { copyText } from "@/utils/clipboard";
 

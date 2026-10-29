@@ -24,6 +24,7 @@ import { CanvasRenderer } from "echarts/renderers";
 
 import type { TraceDashboardGranularity, TraceDashboardTrend } from "@/api/trace";
 import PanelHeader from "@/components/PanelHeader.vue";
+import { useChartResize } from "@/composables/useChartResize";
 import {
   chartAxisLabel,
   chartAxisLine,
@@ -67,6 +68,8 @@ let chartInstance: echarts.ECharts | null = null;
 const trendGranularityText = computed(() => trendGranularityTextMap[trend.granularity]);
 /** 异常趋势行数据。 */
 const trendRows = computed(() => trend.rows ?? []);
+/** 图表尺寸自适应：节流 + 跳过 ResizeObserver 首帧冗余回调。 */
+const { markRendered } = useChartResize(chartRootRef, () => chartInstance);
 
 /** 渲染趋势图。 */
 const renderChart = () => {
@@ -76,6 +79,24 @@ const renderChart = () => {
 
   if (!chartInstance) {
     chartInstance = echarts.init(chartRootRef.value);
+    // 记录初始化时的容器尺寸，供紧随其后的首帧尺寸回调比对。
+    markRendered();
+  }
+
+  /** 坐标轴标签。 */
+  const axisLabels: string[] = [];
+  /** 失败事件数序列。 */
+  const failCounts: number[] = [];
+  /** 警告事件数序列。 */
+  const warningCounts: number[] = [];
+  /** 成功事件数序列。 */
+  const successCounts: number[] = [];
+  // 单次遍历同时产出坐标轴与三条序列，避免对同一份数据做 4 次 map。
+  for (const trendRow of trendRows.value) {
+    axisLabels.push(trendRow.label || trendRow.bucket);
+    failCounts.push(trendRow.failCount);
+    warningCounts.push(trendRow.warningCount);
+    successCounts.push(trendRow.successCount);
   }
 
   chartInstance.setOption({
@@ -87,7 +108,7 @@ const renderChart = () => {
     grid: { top: 46, right: 8, bottom: 4, left: 4, containLabel: true },
     xAxis: {
       type: "category",
-      data: trendRows.value.map((trendRow) => trendRow.label || trendRow.bucket),
+      data: axisLabels,
       axisLabel: chartAxisLabel,
       axisLine: chartAxisLine,
       axisTick: { show: false },
@@ -108,7 +129,7 @@ const renderChart = () => {
         barMaxWidth: 18,
         itemStyle: { color: chartColors.fail },
         emphasis: { focus: "series" },
-        data: trendRows.value.map((trendRow) => trendRow.failCount),
+        data: failCounts,
       },
       {
         name: "警告",
@@ -117,7 +138,7 @@ const renderChart = () => {
         barMaxWidth: 18,
         itemStyle: { color: chartColors.warning },
         emphasis: { focus: "series" },
-        data: trendRows.value.map((trendRow) => trendRow.warningCount),
+        data: warningCounts,
       },
       {
         name: "成功",
@@ -128,20 +149,18 @@ const renderChart = () => {
         lineStyle: { width: 2, color: chartColors.success },
         itemStyle: { color: chartColors.success },
         emphasis: { focus: "series" },
-        data: trendRows.value.map((trendRow) => trendRow.successCount),
+        data: successCounts,
       },
     ],
   });
 };
 
-watch(() => trend, renderChart, { deep: true });
+// 父组件以整体替换的方式更新趋势数据，浅比较即可感知变化；
+// deep 只会带来每次更新都深遍历整棵趋势数组的无谓开销。
+watch(() => trend, renderChart, { flush: "post" });
 
 tryOnMounted(() => {
   renderChart();
-});
-
-useResizeObserver(chartRootRef, () => {
-  chartInstance?.resize();
 });
 
 tryOnUnmounted(() => {

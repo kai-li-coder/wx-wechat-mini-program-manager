@@ -55,9 +55,9 @@
         <div class="event-detail-drawer__section-head">
           <h3>设备信息</h3>
           <span class="event-detail-drawer__section-rule" aria-hidden="true"></span>
-          <CopyButton :text="deviceInfoText" :disabled="!deviceInfoText" />
+          <CopyButton :text="deviceInfoJson.copyText" :disabled="!deviceInfoJson.copyText" />
         </div>
-        <JsonViewer :value="eventItem.deviceInfo" />
+        <JsonViewer :value="eventItem.deviceInfo" :text="deviceInfoJson.displayText" />
       </section>
 
       <!-- 扩展字段区域 -->
@@ -65,9 +65,9 @@
         <div class="event-detail-drawer__section-head">
           <h3>扩展字段</h3>
           <span class="event-detail-drawer__section-rule" aria-hidden="true"></span>
-          <CopyButton :text="extraText" :disabled="!extraText" />
+          <CopyButton :text="extraJson.copyText" :disabled="!extraJson.copyText" />
         </div>
-        <JsonViewer :value="eventItem.extra" />
+        <JsonViewer :value="eventItem.extra" :text="extraJson.displayText" />
       </section>
     </template>
   </el-drawer>
@@ -79,7 +79,7 @@ import CopyButton from "@/components/CopyButton.vue";
 import JsonViewer from "@/components/JsonViewer.vue";
 import ResultTag from "@/components/ResultTag.vue";
 import { formatDisplayDateTime } from "@/utils/date";
-import { formatJsonTextForCopy } from "@/utils/json";
+import { createJsonTextPair } from "@/utils/json";
 import {
   formatTraceEventCode,
   formatTraceStage,
@@ -91,16 +91,16 @@ import {
 const drawerVisible = ref(false);
 /** 当前查看的事件。 */
 const eventItem = ref<TraceEventItem | null>(null);
-/** 当前窗口宽度。 */
-const { width: windowWidth } = useWindowSize();
+/** 是否为窄屏视口：只在跨越断点时变化，避免窗口 resize 期间每帧重渲染抽屉。 */
+const isNarrowViewport = useMediaQuery("(max-width: 768px)");
 
-/** 设备信息复制文本：与 JSON 面板展示保持一致，空数据返回空串以禁用复制。 */
-const deviceInfoText = computed(() => formatJsonTextForCopy(eventItem.value?.deviceInfo));
-/** 扩展字段复制文本。 */
-const extraText = computed(() => formatJsonTextForCopy(eventItem.value?.extra));
+/** 设备信息文本：展示与复制共用一次序列化结果，空数据时复制文本为空串以禁用按钮。 */
+const deviceInfoJson = computed(() => createJsonTextPair(eventItem.value?.deviceInfo));
+/** 扩展字段文本：同上。 */
+const extraJson = computed(() => createJsonTextPair(eventItem.value?.extra));
 
 /** 抽屉尺寸：移动端占满可视宽度，桌面端保持固定阅读宽度。 */
-const drawerSize = computed(() => (windowWidth.value <= 768 ? "92%" : "560px"));
+const drawerSize = computed(() => (isNarrowViewport.value ? "92%" : "560px"));
 
 /** 打开事件详情抽屉。 */
 const openDialog = (selectedEventItem: TraceEventItem) => {

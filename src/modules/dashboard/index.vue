@@ -124,6 +124,8 @@ const dashboardQueryForm = ref<TraceDashboardQuery>(createDefaultDashboardQuery(
 const dashboardData = ref<TraceDashboardResponse>(createEmptyDashboardData());
 /** 页面加载状态。 */
 const isLoading = ref(false);
+/** 请求序号：只接受最后一次请求的结果，避免旧响应覆盖新数据。 */
+let latestRequestSeq = 0;
 
 /** 总览结果摘要，兼容后端未直接返回分类数量的情况。 */
 const dashboardSummary = computed(() => {
@@ -151,16 +153,24 @@ const dashboardSummary = computed(() => {
 
 /** 查询聚合数据。 */
 const handleSearch = async () => {
+  /** 本次请求序号。 */
+  const requestSeq = (latestRequestSeq += 1);
+  /** 请求发出时的条件快照：请求期间用户改表单不得影响本次 24 小时补桶基准。 */
+  const querySnapshot = { ...dashboardQueryForm.value };
+
   isLoading.value = true;
   try {
     /** 后端聚合后的总览数据。 */
-    const dashboardResponse = await queryTraceDashboard(dashboardQueryForm.value);
-    dashboardData.value = normalizeDashboardHourBuckets(
-      dashboardResponse,
-      dashboardQueryForm.value,
-    );
+    const dashboardResponse = await queryTraceDashboard(querySnapshot);
+    if (requestSeq !== latestRequestSeq) {
+      return;
+    }
+    dashboardData.value = normalizeDashboardHourBuckets(dashboardResponse, querySnapshot);
   } finally {
-    isLoading.value = false;
+    // 仅最后一次请求可以结束 loading，避免旧请求把新请求的加载态提前关掉。
+    if (requestSeq === latestRequestSeq) {
+      isLoading.value = false;
+    }
   }
 };
 

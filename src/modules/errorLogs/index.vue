@@ -68,6 +68,8 @@ const eventItems = ref<TraceEventItem[]>([]);
 const errorTotal = ref(0);
 /** 页面加载状态。 */
 const isLoading = ref(false);
+/** 请求序号：只接受最后一次请求的结果，避免快速翻页时旧响应覆盖新数据。 */
+let latestRequestSeq = 0;
 /** 事件详情抽屉引用。 */
 const eventDetailDrawerRef =
   useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
@@ -77,13 +79,25 @@ const errorEventItems = computed(() => toClientTimeDescEventItems(eventItems.val
 
 /** 查询错误日志。 */
 const handleSearch = async () => {
+  /** 本次请求序号。 */
+  const requestSeq = (latestRequestSeq += 1);
+  /** 请求发出时的条件快照。 */
+  const querySnapshot = { ...flowQueryForm.value };
+
   isLoading.value = true;
   try {
-    const flowPageResult = await queryTraceFlow(flowQueryForm.value);
+    /** 后端分页结果。 */
+    const flowPageResult = await queryTraceFlow(querySnapshot);
+    if (requestSeq !== latestRequestSeq) {
+      return;
+    }
     eventItems.value = flowPageResult.records;
     errorTotal.value = flowPageResult.total;
   } finally {
-    isLoading.value = false;
+    // 仅最后一次请求可以结束 loading。
+    if (requestSeq === latestRequestSeq) {
+      isLoading.value = false;
+    }
   }
 };
 
