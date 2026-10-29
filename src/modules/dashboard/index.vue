@@ -20,22 +20,31 @@
     <!-- 指标汇总区 -->
     <MetricSummary :summary="dashboardSummary" />
 
-    <!-- 图表与分析区 -->
+    <!-- 图表与分析区：两行两列，同行卡片等高、两列底部齐平 -->
     <div class="dashboard-page__content">
-      <!-- 主图表区 -->
-      <div class="dashboard-page__main-charts">
-        <MetricTrendChart :loading="isLoading" :trend="dashboardData.trend" />
-        <CandidateTrendChart :candidate-trend="dashboardData.candidateTrend" :loading="isLoading" />
-      </div>
+      <!-- 第一行：异常趋势（左）+ 五大错误码（右） -->
+      <MetricTrendChart
+        class="dashboard-page__trend"
+        :loading="isLoading"
+        :trend="dashboardData.trend"
+      />
+      <TopErrorEventCodeChart
+        class="dashboard-page__top-error"
+        :loading="isLoading"
+        :top-error-event-codes="dashboardData.topErrorEventCodes"
+      />
 
-      <!-- 右侧分析区 -->
-      <div class="dashboard-page__analysis">
-        <TopErrorEventCodeChart
-          :loading="isLoading"
-          :top-error-event-codes="dashboardData.topErrorEventCodes"
-        />
-        <ErrorWarningPanel :loading="isLoading" :summary="dashboardData.errorWarning" />
-      </div>
+      <!-- 第二行：候选人趋势（左）+ 错误预警（右） -->
+      <CandidateTrendChart
+        class="dashboard-page__candidate"
+        :candidate-trend="dashboardData.candidateTrend"
+        :loading="isLoading"
+      />
+      <ErrorWarningPanel
+        class="dashboard-page__warning"
+        :loading="isLoading"
+        :summary="dashboardData.errorWarning"
+      />
     </div>
   </section>
 </template>
@@ -167,30 +176,47 @@ tryOnMounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* 图表与分析区：显式网格区域，同一行两张卡片自动等高（align-self: stretch），
+   两行高度相加后左右两列底边自然齐平，不会出现一列高一列矮的错位 */
 .dashboard-page__content {
   display: grid;
+  grid-template-areas:
+    "trend top-error"
+    "candidate warning";
   grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.75fr);
   gap: $space-5;
 }
 
-.dashboard-page__main-charts,
-.dashboard-page__analysis {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: $space-5;
+.dashboard-page__trend {
+  grid-area: trend;
 }
 
+.dashboard-page__top-error {
+  grid-area: top-error;
+}
+
+.dashboard-page__candidate {
+  grid-area: candidate;
+}
+
+.dashboard-page__warning {
+  grid-area: warning;
+}
+
+/* 中等屏：单列堆叠，顺序按「趋势 → 明细」分组，卡片恢复自然高度 */
 @media (max-width: 1240px) {
   .dashboard-page__content {
-    grid-template-columns: 1fr;
+    grid-template-areas:
+      "trend"
+      "candidate"
+      "top-error"
+      "warning";
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @include screen-sm {
-  .dashboard-page__content,
-  .dashboard-page__main-charts,
-  .dashboard-page__analysis {
+  .dashboard-page__content {
     gap: $space-3;
   }
 }

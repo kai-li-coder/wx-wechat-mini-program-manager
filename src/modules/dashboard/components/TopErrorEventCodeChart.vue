@@ -148,18 +148,37 @@ tryOnUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* 卡片纵向弹性布局：与同行图表卡等高时画布同步增高 */
 .top-error-chart {
+  display: flex;
+  flex-direction: column;
   border-radius: $radius-md;
 }
 
+.top-error-chart :deep(.el-card__header) {
+  flex: 0 0 auto;
+}
+
+.top-error-chart :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 22px;
+}
+
+/* 画布容器：空态浮层以此为定位基准，同时承担等高拉伸 */
 .top-error-chart__body {
   position: relative;
-  min-height: 320px;
+  display: flex;
+  flex: 1 1 $chart-canvas-height;
+  min-height: $chart-canvas-height;
 }
 
 .top-error-chart__canvas {
   width: 100%;
-  height: 320px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .top-error-chart__empty {
@@ -170,12 +189,13 @@ tryOnUnmounted(() => {
 }
 
 @include screen-sm {
-  .top-error-chart__body {
-    min-height: 280px;
+  .top-error-chart :deep(.el-card__body) {
+    padding: 14px 16px;
   }
 
-  .top-error-chart__canvas {
-    height: 280px;
+  .top-error-chart__body {
+    min-height: $chart-canvas-height-sm;
+    flex-basis: $chart-canvas-height-sm;
   }
 }
 </style>

@@ -151,18 +151,42 @@ tryOnUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* 卡片纵向弹性布局：同行卡片被拉伸到等高时，画布同步增高而不留白 */
 .chart-card {
+  display: flex;
+  flex-direction: column;
   border-radius: $radius-md;
 }
 
+.chart-card :deep(.el-card__header) {
+  flex: 0 0 auto;
+}
+
+/* 内容区收紧纵向留白（22px → 16px），横向沿用 22px 与其它卡片对齐；
+   纵向弹性使画布的 flex-basis 作用于高度，而不是宽度 */
+.chart-card :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 22px;
+}
+
+/* 画布以统一基准高度为下限，行高更高时可继续增长 */
 .chart-card__body {
   width: 100%;
-  height: 320px;
+  min-height: $chart-canvas-height;
+  flex: 1 1 $chart-canvas-height;
 }
 
 @include screen-sm {
+  .chart-card :deep(.el-card__body) {
+    padding: 14px 16px;
+  }
+
   .chart-card__body {
-    height: 260px;
+    min-height: $chart-canvas-height-sm;
+    flex-basis: $chart-canvas-height-sm;
   }
 }
 </style>

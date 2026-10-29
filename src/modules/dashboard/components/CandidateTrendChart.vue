@@ -173,18 +173,37 @@ tryOnUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* 卡片纵向弹性布局：与左侧图表卡等高时画布同步增高 */
 .candidate-trend-chart {
+  display: flex;
+  flex-direction: column;
   border-radius: $radius-md;
 }
 
+.candidate-trend-chart :deep(.el-card__header) {
+  flex: 0 0 auto;
+}
+
+.candidate-trend-chart :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 22px;
+}
+
+/* 画布容器：空态浮层以此为定位基准，同时承担等高拉伸 */
 .candidate-trend-chart__body {
   position: relative;
-  min-height: 320px;
+  display: flex;
+  flex: 1 1 $chart-canvas-height;
+  min-height: $chart-canvas-height;
 }
 
 .candidate-trend-chart__canvas {
   width: 100%;
-  height: 320px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .candidate-trend-chart__empty {
@@ -195,12 +214,13 @@ tryOnUnmounted(() => {
 }
 
 @include screen-sm {
-  .candidate-trend-chart__body {
-    min-height: 260px;
+  .candidate-trend-chart :deep(.el-card__body) {
+    padding: 14px 16px;
   }
 
-  .candidate-trend-chart__canvas {
-    height: 260px;
+  .candidate-trend-chart__body {
+    min-height: $chart-canvas-height-sm;
+    flex-basis: $chart-canvas-height-sm;
   }
 }
 </style>

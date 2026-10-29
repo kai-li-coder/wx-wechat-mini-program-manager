@@ -15,7 +15,11 @@
     </template>
 
     <!-- 空数据提示 -->
-    <EmptyState v-if="!hasWarningData" description="当前筛选条件下没有可评估的埋点数据" />
+    <EmptyState
+      v-if="!hasWarningData"
+      class="error-warning-panel__empty"
+      description="当前筛选条件下没有可评估的埋点数据"
+    />
 
     <!-- 预警内容区 -->
     <div v-else class="error-warning-panel__body">
@@ -123,14 +127,32 @@ const thresholdTextItems = computed(() => [
 </script>
 
 <style scoped lang="scss">
+/* 卡片纵向弹性布局：与同行图表卡等高时内容按剩余空间排布 */
 .error-warning-panel {
+  display: flex;
+  flex-direction: column;
   border-radius: $radius-md;
 }
 
+/* 内容区留白与图表卡对齐：纵向 16px 收紧，横向保持 22px */
+.error-warning-panel :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  padding: 16px 22px;
+}
+
+/* 空态撑满内容区并垂直居中，避免卡片被等高拉伸后底部留出大片空白 */
+.error-warning-panel__empty {
+  flex: 1 1 auto;
+}
+
+/* 各分区之间由 20px 收到 14px：卡片高度与相邻图表卡更接近，信息层级不衰减 */
 .error-warning-panel__body {
   display: flex;
   flex-direction: column;
-  gap: $space-5;
+  gap: 14px;
 }
 
 /* 状态带：柔和色块 + 状态点，与参考图的浅色卡片一致 */
@@ -138,7 +160,7 @@ const thresholdTextItems = computed(() => [
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px $space-4;
+  padding: 10px $space-4;
   border: 1px solid transparent;
   border-radius: $radius-sm;
   background: $color-surface-subtle;
@@ -162,13 +184,13 @@ const thresholdTextItems = computed(() => [
   color: $color-text-primary;
   font-size: $font-size-md;
   font-weight: 600;
-  line-height: 22px;
+  line-height: 20px;
 }
 
 .warning-status__text span {
   color: $color-text-muted;
   font-size: $font-size-xs;
-  line-height: 16px;
+  line-height: 15px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -216,8 +238,8 @@ const thresholdTextItems = computed(() => [
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
-  padding: $space-3 $space-3 $space-3 0;
+  gap: 3px;
+  padding: 10px $space-3 10px 0;
 }
 
 .warning-metric + .warning-metric {
@@ -235,7 +257,7 @@ const thresholdTextItems = computed(() => [
   color: $color-text-primary;
   font-size: $font-size-lg;
   font-weight: 700;
-  line-height: 22px;
+  line-height: 20px;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -249,20 +271,20 @@ const thresholdTextItems = computed(() => [
 .warning-section {
   display: flex;
   flex-direction: column;
-  gap: $space-2;
+  gap: 6px;
 }
 
 .warning-section__title {
   color: $color-text-primary;
   font-size: $font-size-sm;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 17px;
 }
 
 .warning-reasons {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -273,13 +295,13 @@ const thresholdTextItems = computed(() => [
   padding-left: 14px;
   color: $color-text-secondary;
   font-size: $font-size-sm;
-  line-height: 20px;
+  line-height: 19px;
 }
 
 /* 方形标记：与等宽编号同一套几何语言 */
 .warning-reasons li::before {
   position: absolute;
-  top: 7px;
+  top: 6px;
   left: 2px;
   width: 5px;
   height: 5px;
@@ -288,24 +310,28 @@ const thresholdTextItems = computed(() => [
 }
 
 .warning-section--thresholds {
-  padding-top: $space-3;
+  padding-top: 10px;
   border-top: 1px solid $color-border-soft;
 }
 
 .warning-threshold {
   color: $color-text-muted;
   font-size: $font-size-xs;
-  line-height: 18px;
+  line-height: 17px;
   font-variant-numeric: tabular-nums;
 }
 
 @include screen-sm {
+  .error-warning-panel :deep(.el-card__body) {
+    padding: 14px 16px;
+  }
+
   .warning-metrics {
     grid-template-columns: 1fr;
   }
 
   .warning-metric {
-    padding: $space-3 0;
+    padding: 10px 0;
   }
 
   .warning-metric + .warning-metric {

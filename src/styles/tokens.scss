@@ -108,6 +108,12 @@ $layout-sidebar-collapsed: 76px;
 // 主体内容区水平留白：与左侧菜单栏、视口右边缘始终保持同一间距，不随断点变化
 $layout-gutter: 32px;
 
+/* ---------- 图表画布尺寸 ---------- */
+// 图表卡片画布基准高度：三张图表卡共用同一基准，保证卡片高度协调；
+// 同一网格行内卡片被等高拉伸时，画布以此基准继续增长而不是留白
+$chart-canvas-height: 232px;
+$chart-canvas-height-sm: 196px;
+
 /* ---------- Element Plus 语义色映射 ---------- */
 $element-color-map: (
   primary: $color-accent,
