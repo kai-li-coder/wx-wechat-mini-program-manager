@@ -24,6 +24,17 @@ export type TraceDeviceQuickFilter = "" | "ios" | "android";
 /** 错误日志品牌快捷筛选值。 */
 export type TraceBrandQuickFilter = "" | "iphone" | "nonIphone";
 
+/** 错误日志品牌筛选模式：空值表示全部品牌。 */
+export type TraceErrorBrandFilterMode = "" | "iphone" | "android" | "other";
+
+/** 错误日志品牌筛选条件。 */
+export interface TraceErrorBrandFilter {
+  /** 品牌筛选模式。 */
+  mode: TraceErrorBrandFilterMode;
+  /** 「其他」模式下手工填写的品牌名称。 */
+  keyword: string;
+}
+
 /** 错误日志品牌标签筛选结果。 */
 export interface TraceErrorBrandTagFilter {
   /** 规范化后的品牌标签。 */
@@ -1220,6 +1231,67 @@ const isMatchedTraceBrandQuickFilter = (
   }
 
   return !isIphoneBrandDevice;
+};
+
+/** 判断是否命中「其他」品牌：排除 iPhone 与 Android 阵营，填写品牌名时再做包含匹配。 */
+const isMatchedTraceOtherBrand = (matchFields: TraceDeviceMatchFields, brandKeyword: string) => {
+  if (isTraceIphoneBrandDevice(matchFields) || isTraceAndroidDevice(matchFields)) {
+    return false;
+  }
+
+  // 没有品牌字段的记录（如开发工具）无法归属到具体品牌，不计入「其他」。
+  if (!matchFields.brand) {
+    return false;
+  }
+
+  return brandKeyword ? matchFields.brand.includes(brandKeyword) : true;
+};
+
+/** 判断事件是否命中品牌筛选条件。 */
+const isMatchedTraceErrorBrandFilter = (
+  matchFields: TraceDeviceMatchFields,
+  brandFilter: TraceErrorBrandFilter,
+) => {
+  if (brandFilter.mode === "iphone") {
+    return isTraceIphoneBrandDevice(matchFields);
+  }
+
+  if (brandFilter.mode === "android") {
+    return isTraceAndroidDevice(matchFields);
+  }
+
+  if (brandFilter.mode === "other") {
+    return isMatchedTraceOtherBrand(matchFields, brandFilter.keyword);
+  }
+
+  // 空模式表示全部品牌。
+  return true;
+};
+
+/**
+ * 按品牌筛选条件过滤事件列表。
+ * 品牌条件不写入后端查询参数，全部在前端按设备信息匹配。
+ */
+export const filterErrorEventsByBrand = (
+  eventItems: TraceEventItem[],
+  brandFilter?: TraceErrorBrandFilter,
+): TraceEventItem[] => {
+  /** 归一化后的品牌筛选条件。 */
+  const normalizedBrandFilter: TraceErrorBrandFilter = {
+    mode: brandFilter?.mode ?? "",
+    // 设备字段匹配值统一小写，关键字同步转小写才能做大小写不敏感的包含比较。
+    keyword: String(brandFilter?.keyword ?? "").trim().toLowerCase(),
+  };
+  if (!normalizedBrandFilter.mode) {
+    return eventItems;
+  }
+
+  return eventItems.filter((eventItem) =>
+    isMatchedTraceErrorBrandFilter(
+      resolveTraceDeviceMatchFields(eventItem.deviceInfo),
+      normalizedBrandFilter,
+    ),
+  );
 };
 
 /** 筛选错误日志事件。 */

@@ -28,7 +28,7 @@ describe("useTraceOptions", () => {
 
   it("builds error log quick filter options", () => {
     /** 埋点查询选项。 */
-    const { errorBrandQuickFilterOptions, errorDeviceQuickFilterOptions } = useTraceOptions();
+    const { errorBrandFilterOptions, errorBrandQuickFilterOptions, errorDeviceQuickFilterOptions } = useTraceOptions();
 
     expect(errorDeviceQuickFilterOptions.map((deviceQuickOption) => deviceQuickOption.label)).toEqual([
       "全部机型",
@@ -39,6 +39,12 @@ describe("useTraceOptions", () => {
       "全部品牌",
       "iPhone",
       "非iPhone",
+    ]);
+    // 品牌下拉固定三档，顺序即展示顺序。
+    expect(errorBrandFilterOptions).toEqual([
+      { label: "iPhone", value: "iphone" },
+      { label: "Android", value: "android" },
+      { label: "其他", value: "other" },
     ]);
   });
 });

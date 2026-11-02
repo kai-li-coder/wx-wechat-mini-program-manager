@@ -11,6 +11,8 @@
     <!-- 查询条件区：位于滚动区之外，滚动列表时始终保持可见 -->
     <div class="error-log-page__filter">
       <ErrorLogSearchForm
+        v-model:brand-keyword="brandFilterKeyword"
+        v-model:brand-mode="brandFilterMode"
         v-model:query="flowQueryForm"
         :loading="isLoading"
         @reset="handleReset"
@@ -39,29 +41,38 @@
 
 <script setup lang="ts">
 import type { TraceEventItem, TraceFlowQuery } from "@/api/trace";
+import type { TraceErrorBrandFilter, TraceErrorBrandFilterMode } from "@/utils/trace";
 import { queryTraceFlow } from "@/api/trace";
 import PageHeader from "@/components/PageHeader.vue";
 import ErrorLogSearchForm from "@/modules/errorLogs/components/ErrorLogSearchForm.vue";
 import ErrorLogTable from "@/modules/errorLogs/components/ErrorLogTable.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
 import { createTodayTraceRange } from "@/utils/date";
-import { toClientTimeDescEventItems } from "@/utils/trace";
+import { filterErrorEventsByBrand, toClientTimeDescEventItems } from "@/utils/trace";
 
-/** 创建默认错误日志查询条件。 */
+/** 创建默认错误日志查询条件：品牌条件由前端匹配，因此不作为后端查询参数。 */
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
   flowId: "",
   interviewCandidateId: "",
   eventCode: "",
   result: "fail",
-  brand: "",
   model: "",
   ...createTodayTraceRange(),
   pageNum: 1,
   pageSize: 50,
 });
 
+/** 创建空的品牌筛选条件。 */
+const createEmptyBrandFilter = (): TraceErrorBrandFilter => ({ mode: "", keyword: "" });
+
 /** 链路查询表单。 */
 const flowQueryForm = ref<TraceFlowQuery>(createDefaultFlowQuery());
+/** 品牌筛选模式：与下拉框双向绑定。 */
+const brandFilterMode = ref<TraceErrorBrandFilterMode>("");
+/** 「其他」品牌名称：与下拉框下方的输入框双向绑定。 */
+const brandFilterKeyword = ref("");
+/** 已生效的品牌筛选条件：仅在提交查询时同步，输入过程中不影响当前结果。 */
+const appliedBrandFilter = ref<TraceErrorBrandFilter>(createEmptyBrandFilter());
 /** 原始链路事件列表。 */
 const eventItems = ref<TraceEventItem[]>([]);
 /** 错误日志后端分页总数。 */
@@ -74,8 +85,10 @@ let latestRequestSeq = 0;
 const eventDetailDrawerRef =
   useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 
-/** 错误日志列表。 */
-const errorEventItems = computed(() => toClientTimeDescEventItems(eventItems.value));
+/** 错误日志列表：后端分页结果再叠加前端品牌条件。 */
+const errorEventItems = computed(() =>
+  toClientTimeDescEventItems(filterErrorEventsByBrand(eventItems.value, appliedBrandFilter.value)),
+);
 
 /** 查询错误日志。 */
 const handleSearch = async () => {
@@ -83,6 +96,11 @@ const handleSearch = async () => {
   const requestSeq = (latestRequestSeq += 1);
   /** 请求发出时的条件快照。 */
   const querySnapshot = { ...flowQueryForm.value };
+  /** 请求发出时的品牌条件快照：品牌由前端匹配，不写入后端查询参数。 */
+  const brandFilterSnapshot: TraceErrorBrandFilter = {
+    mode: brandFilterMode.value,
+    keyword: brandFilterKeyword.value,
+  };
 
   isLoading.value = true;
   try {
@@ -93,6 +111,8 @@ const handleSearch = async () => {
     }
     eventItems.value = flowPageResult.records;
     errorTotal.value = flowPageResult.total;
+    // 与本次结果一起生效，保证表格展示的条件与请求中的条件完全一致。
+    appliedBrandFilter.value = brandFilterSnapshot;
   } finally {
     // 仅最后一次请求可以结束 loading。
     if (requestSeq === latestRequestSeq) {
@@ -104,6 +124,9 @@ const handleSearch = async () => {
 /** 重置查询条件。 */
 const handleReset = () => {
   flowQueryForm.value = createDefaultFlowQuery();
+  brandFilterMode.value = "";
+  brandFilterKeyword.value = "";
+  appliedBrandFilter.value = createEmptyBrandFilter();
   eventItems.value = [];
   errorTotal.value = 0;
 };

@@ -5,6 +5,7 @@ import type { TraceEventItem, TraceMetricItem } from "@/api/trace";
 import {
   aggregateMetricSummary,
   filterErrorEvents,
+  filterErrorEventsByBrand,
   formatTraceEventCode,
   formatTraceStage,
   normalizeTraceErrorBrandTags,
@@ -763,6 +764,56 @@ describe("trace utils", () => {
         (eventItem) => eventItem.eventId,
       ),
     ).toEqual(["evt_android"]);
+  });
+
+  it("filters error events by brand filter modes", () => {
+    const iphoneEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_iphone",
+      deviceInfo: { brand: "iPhone", model: "iPhone 15 Pro" },
+    };
+    const androidEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_android",
+      deviceInfo: { brand: "Xiaomi", model: "14", platform: "android", system: "Android 14" },
+    };
+    const otherBrandEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_other",
+      deviceInfo: { brand: "HUAWEI", model: "Mate 60", platform: "devtools" },
+    };
+    const eventItems = [iphoneEventItem, androidEventItem, otherBrandEventItem];
+
+    // 空模式表示全部品牌，不改变原列表。
+    expect(filterErrorEventsByBrand(eventItems, { mode: "", keyword: "" })).toBe(eventItems);
+    expect(filterErrorEventsByBrand(eventItems)).toBe(eventItems);
+    expect(filterErrorEventsByBrand(eventItems, { mode: "iphone", keyword: "" }).map((item) => item.eventId)).toEqual(
+      ["evt_iphone"],
+    );
+    // Android 按运行平台判定，品牌名不参与。
+    expect(filterErrorEventsByBrand(eventItems, { mode: "android", keyword: "" }).map((item) => item.eventId)).toEqual(
+      ["evt_android"],
+    );
+    // 「其他」排除 iPhone 与 Android，未填品牌名时保留其余已知品牌。
+    expect(filterErrorEventsByBrand(eventItems, { mode: "other", keyword: "" }).map((item) => item.eventId)).toEqual([
+      "evt_other",
+    ]);
+    // 「其他」填写品牌名后按包含匹配收窄，大小写不敏感。
+    expect(
+      filterErrorEventsByBrand(eventItems, { mode: "other", keyword: " huawei " }).map((item) => item.eventId),
+    ).toEqual(["evt_other"]);
+    expect(filterErrorEventsByBrand(eventItems, { mode: "other", keyword: "samsung" })).toEqual([]);
+  });
+
+  it("excludes events without brand from other brand filter", () => {
+    const noDeviceEventItem = { ...createEventItem("fail"), eventId: "evt_no_device", deviceInfo: null };
+    const devtoolsEventItem = {
+      ...createEventItem("fail"),
+      eventId: "evt_devtools",
+      deviceInfo: { brand: "devtools", model: "iPhone 15 Pro" },
+    };
+
+    expect(filterErrorEventsByBrand([noDeviceEventItem, devtoolsEventItem], { mode: "other", keyword: "" })).toEqual([]);
   });
 
   it("excludes devtools test records from error events", () => {

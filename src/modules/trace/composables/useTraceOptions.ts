@@ -1,7 +1,11 @@
 // 埋点查询选项配置。
 import dayjs from "dayjs";
 
-import type { TraceBrandQuickFilter, TraceDeviceQuickFilter } from "@/utils/trace";
+import type {
+  TraceBrandQuickFilter,
+  TraceDeviceQuickFilter,
+  TraceErrorBrandFilterMode,
+} from "@/utils/trace";
 import { formatTraceEventCode, formatTraceStage, traceEventCodes, traceStageCodes } from "@/utils/trace";
 
 /** 日期范围快捷项。 */
@@ -66,6 +70,19 @@ const errorBrandQuickFilterOptions: Array<{ label: string; value: TraceBrandQuic
   { label: "非iPhone", value: "nonIphone" },
 ];
 
+/**
+ * 错误日志品牌筛选模式选项：固定三项。
+ * 该选项只决定前端品牌匹配方式，不映射为后端品牌查询参数。
+ */
+const errorBrandFilterOptions: Array<{
+  label: string;
+  value: Exclude<TraceErrorBrandFilterMode, "">;
+}> = [
+  { label: "iPhone", value: "iphone" },
+  { label: "Android", value: "android" },
+  { label: "其他", value: "other" },
+];
+
 /** 埋点总览日期范围快捷项。 */
 const dashboardDateRangeShortcuts: DateRangeShortcut[] = [
   {
@@ -118,6 +135,7 @@ export const useTraceOptions = () => ({
   errorResultOptions,
   errorDeviceQuickFilterOptions,
   errorBrandQuickFilterOptions,
+  errorBrandFilterOptions,
   eventCodeOptions,
   stageOptions,
   dashboardDateRangeShortcuts,
