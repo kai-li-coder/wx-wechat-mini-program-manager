@@ -6,7 +6,12 @@
       <!-- 表格标题栏 -->
       <PanelHeader title="错误记录">
         <template #extra>
-          <span class="table-card__count">共 {{ formatCount(total) }} 条</span>
+          <span class="table-card__count">
+            <template v-if="filterActive">
+              当前页 {{ formatCount(eventItems.length) }} 条 · 共 {{ formatCount(total) }} 条
+            </template>
+            <template v-else>共 {{ formatCount(total) }} 条</template>
+          </span>
           <span class="table-card__scope meta-chip">失败 / 警告</span>
         </template>
       </PanelHeader>
@@ -106,13 +111,16 @@ type TraceEventTableRow = TraceEventItem & {
 
 const {
   eventItems,
+  filterActive = false,
   loading = false,
   pageNum,
   pageSize,
   total,
 } = defineProps<{
-  /** 错误日志事件列表。 */
+  /** 错误日志事件列表（已叠加前端筛选）。 */
   eventItems: TraceEventItem[];
+  /** 是否启用了前端筛选：为真时同时展示本页命中条数。 */
+  filterActive?: boolean;
   /** 表格加载状态。 */
   loading?: boolean;
   /** 当前页码。 */

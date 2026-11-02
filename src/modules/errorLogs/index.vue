@@ -14,7 +14,9 @@
         v-model:brand-keyword="brandFilterKeyword"
         v-model:brand-mode="brandFilterMode"
         v-model:query="flowQueryForm"
+        v-model:terminal-models="selectedTerminalModels"
         :loading="isLoading"
+        :terminal-model-options="terminalModelOptions"
         @reset="handleReset"
         @search="handleSearch"
       />
@@ -24,6 +26,7 @@
     <div class="error-log-page__scroll">
       <ErrorLogTable
         :event-items="errorEventItems"
+        :filter-active="isClientFilterActive"
         :loading="isLoading"
         :page-num="flowQueryForm.pageNum || 1"
         :page-size="flowQueryForm.pageSize || 50"
@@ -49,14 +52,17 @@ import ErrorLogTable from "@/modules/errorLogs/components/ErrorLogTable.vue";
 import EventDetailDrawer from "@/modules/traceFlow/components/EventDetailDrawer.vue";
 import { createTodayTraceRange } from "@/utils/date";
 import { filterErrorEventsByBrand, toClientTimeDescEventItems } from "@/utils/trace";
+import { collectTraceTerminalModels, filterEventItemsByTerminalModels } from "@/utils/traceDeviceModel";
 
-/** 创建默认错误日志查询条件：品牌条件由前端匹配，因此不作为后端查询参数。 */
+/**
+ * 创建默认错误日志查询条件。
+ * 品牌与机型条件都由前端按设备信息匹配，因此不作为后端查询参数。
+ */
 const createDefaultFlowQuery = (): TraceFlowQuery => ({
   flowId: "",
   interviewCandidateId: "",
   eventCode: "",
   result: "fail",
-  model: "",
   ...createTodayTraceRange(),
   pageNum: 1,
   pageSize: 50,
@@ -73,6 +79,8 @@ const brandFilterMode = ref<TraceErrorBrandFilterMode>("");
 const brandFilterKeyword = ref("");
 /** 已生效的品牌筛选条件：仅在提交查询时同步，输入过程中不影响当前结果。 */
 const appliedBrandFilter = ref<TraceErrorBrandFilter>(createEmptyBrandFilter());
+/** 机型多选筛选值：与下拉框双向绑定，空数组表示全部机型。 */
+const selectedTerminalModels = ref<string[]>([]);
 /** 原始链路事件列表。 */
 const eventItems = ref<TraceEventItem[]>([]);
 /** 错误日志后端分页总数。 */
@@ -85,9 +93,40 @@ let latestRequestSeq = 0;
 const eventDetailDrawerRef =
   useTemplateRef<InstanceType<typeof EventDetailDrawer>>("eventDetailDrawerRef");
 
-/** 错误日志列表：后端分页结果再叠加前端品牌条件。 */
+/**
+ * 机型可选项：取当前页「终端型号」列的去重取值。
+ * 只依赖未过滤的原始数据，避免选中后选项随结果收缩而无法继续调整；
+ * 已选中但本页未出现的型号一并保留，保证标签可回溯、可取消。
+ */
+const terminalModelOptions = computed(() => {
+  /** 当前页出现的终端型号。 */
+  const pageTerminalModels = collectTraceTerminalModels(eventItems.value);
+  /** 已选中但当前页未出现的型号。 */
+  const absentSelectedModels = selectedTerminalModels.value.filter(
+    (selectedModel) => !pageTerminalModels.includes(selectedModel),
+  );
+  if (absentSelectedModels.length === 0) {
+    return pageTerminalModels;
+  }
+
+  return [...pageTerminalModels, ...absentSelectedModels].sort((leftModel, rightModel) =>
+    leftModel.localeCompare(rightModel, "zh-Hans-CN"),
+  );
+});
+
+/** 错误日志列表：后端分页结果再叠加前端品牌与机型条件。 */
 const errorEventItems = computed(() =>
-  toClientTimeDescEventItems(filterErrorEventsByBrand(eventItems.value, appliedBrandFilter.value)),
+  toClientTimeDescEventItems(
+    filterEventItemsByTerminalModels(
+      filterErrorEventsByBrand(eventItems.value, appliedBrandFilter.value),
+      selectedTerminalModels.value,
+    ),
+  ),
+);
+
+/** 是否启用了前端筛选：用于说明表格条数口径。 */
+const isClientFilterActive = computed(
+  () => Boolean(appliedBrandFilter.value.mode) || selectedTerminalModels.value.length > 0,
 );
 
 /** 查询错误日志。 */
@@ -127,6 +166,7 @@ const handleReset = () => {
   brandFilterMode.value = "";
   brandFilterKeyword.value = "";
   appliedBrandFilter.value = createEmptyBrandFilter();
+  selectedTerminalModels.value = [];
   eventItems.value = [];
   errorTotal.value = 0;
 };

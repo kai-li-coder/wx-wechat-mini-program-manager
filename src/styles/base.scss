@@ -667,6 +667,29 @@ html {
     font-weight: 600;
   }
 
+  /* 机型多选下拉顶部操作条：下拉层被传送到 body，样式需保持全局作用域 */
+  .terminal-model-dropdown .el-select-dropdown__header {
+    border-bottom-color: $color-border-soft;
+  }
+
+  .terminal-model-actions {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+  }
+
+  .terminal-model-actions .el-button + .el-button {
+    margin-left: 0;
+  }
+
+  .terminal-model-actions__count {
+    margin-left: auto;
+    color: $color-text-muted;
+    font-size: $font-size-xs;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   .el-picker-panel {
     border-radius: $radius-sm;
   }

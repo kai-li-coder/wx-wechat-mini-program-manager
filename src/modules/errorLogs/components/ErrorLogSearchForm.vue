@@ -63,9 +63,54 @@
         </div>
       </el-form-item>
 
-      <!-- 机型筛选 -->
-      <el-form-item label="机型">
-        <el-input v-model.trim="queryForm.model" clearable placeholder="请输入机型" />
+      <!-- 机型筛选：多选表格「终端型号」列取值，空选表示全部机型 -->
+      <el-form-item class="query-form__terminal-models" label="机型">
+        <el-select
+          v-model="terminalModels"
+          :max-collapse-tags="1"
+          clearable
+          collapse-tags
+          collapse-tags-tooltip
+          filterable
+          multiple
+          no-data-text="当前页暂无机型数据"
+          placeholder="全部机型"
+          popper-class="terminal-model-dropdown"
+        >
+          <!-- 下拉顶部操作条：全选 / 清空 / 已选数量 -->
+          <template #header>
+            <div class="terminal-model-actions">
+              <el-button
+                :disabled="terminalModelOptions.length === 0 || isAllTerminalModelsSelected"
+                link
+                size="small"
+                type="primary"
+                @click="handleSelectAllTerminalModels"
+              >
+                全选
+              </el-button>
+              <el-button
+                :disabled="terminalModels.length === 0"
+                link
+                size="small"
+                @click="handleClearTerminalModels"
+              >
+                清空
+              </el-button>
+              <span class="terminal-model-actions__count">
+                已选 {{ terminalModels.length }} / {{ terminalModelOptions.length }}
+              </span>
+            </div>
+          </template>
+
+          <!-- 终端型号选项：与表格列展示值完全一致，选中即按精确值过滤 -->
+          <el-option
+            v-for="terminalModelOption in terminalModelOptions"
+            :key="terminalModelOption"
+            :label="terminalModelOption"
+            :value="terminalModelOption"
+          />
+        </el-select>
       </el-form-item>
 
       <!-- 服务端时间范围筛选 -->
@@ -112,10 +157,14 @@ const queryForm = defineModel<TraceFlowQuery>("query", { required: true });
 const brandMode = defineModel<TraceErrorBrandFilterMode>("brandMode", { required: true });
 /** 「其他」模式下手工填写的品牌名称。 */
 const brandKeyword = defineModel<string>("brandKeyword", { required: true });
+/** 机型多选筛选值：空数组表示全部机型，即默认展示。 */
+const terminalModels = defineModel<string[]>("terminalModels", { required: true });
 
-const { loading = false } = defineProps<{
+const { loading = false, terminalModelOptions = [] } = defineProps<{
   /** 查询按钮加载状态。 */
   loading?: boolean;
+  /** 机型可选项：取自表格「终端型号」列在当前离线数据中的取值。 */
+  terminalModelOptions?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -127,6 +176,24 @@ const emit = defineEmits<{
 
 /** 错误日志筛选选项。 */
 const { errorBrandFilterOptions, errorResultOptions, eventCodeOptions } = useTraceOptions();
+
+/** 是否已选中全部机型。 */
+const isAllTerminalModelsSelected = computed(
+  () => terminalModelOptions.length > 0 && terminalModels.value.length >= terminalModelOptions.length,
+);
+
+/**
+ * 全选机型：一次性选中当前全部选项。
+ * 全选后表格回到默认展示，与清空筛选的效果一致。
+ */
+const handleSelectAllTerminalModels = () => {
+  terminalModels.value = [...terminalModelOptions];
+};
+
+/** 清空机型筛选，恢复默认展示。 */
+const handleClearTerminalModels = () => {
+  terminalModels.value = [];
+};
 
 /**
  * 切换品牌筛选模式。
@@ -179,5 +246,24 @@ const serverTimeRange = computed<string[] | null>({
   width: 100%;
   flex-direction: column;
   gap: $space-2;
+}
+
+/*
+ * 机型多选：机型展示值较长（含原始型号代码），标签换行会把查询条件栏撑高。
+ * 这里强制单行并让标签内省略，完整已选项可通过折叠标签的悬浮提示与下拉顶部操作条查看。
+ */
+.query-form__terminal-models :deep(.el-select__selection) {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.query-form__terminal-models :deep(.el-select__selected-item) {
+  min-width: 0;
+}
+
+.query-form__terminal-models :deep(.el-tag) {
+  /* 预留折叠标签「+N」的宽度，避免第一个标签过长时把计数挤到可视区外 */
+  max-width: calc(100% - 48px);
+  overflow: hidden;
 }
 </style>
